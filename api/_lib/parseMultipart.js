@@ -17,6 +17,7 @@ export function parseMultipart(req) {
     });
 
     let fileInfo = null;
+    let fileWritePromise = null;
 
     busboy.on('file', (_fieldName, fileStream, info) => {
       const { filename, mimeType } = info;
@@ -24,15 +25,18 @@ export function parseMultipart(req) {
       const tmpPath = path.join('/tmp', `${randomUUID()}${ext}`);
       const writeStream = fs.createWriteStream(tmpPath);
 
-      fileStream.pipe(writeStream);
+      fileInfo = {
+        filePath: tmpPath,
+        originalName: filename || 'audio.webm',
+        mimeType: mimeType || 'audio/webm',
+      };
 
-      writeStream.on('close', () => {
-        fileInfo = {
-          filePath: tmpPath,
-          originalName: filename || 'audio.webm',
-          mimeType: mimeType || 'audio/webm',
-        };
+      fileWritePromise = new Promise((resolveWrite, rejectWrite) => {
+        writeStream.on('finish', resolveWrite);
+        writeStream.on('error', rejectWrite);
       });
+
+      fileStream.pipe(writeStream);
 
       fileStream.on('limit', () => {
         fs.unlink(tmpPath, () => {});
@@ -40,11 +44,19 @@ export function parseMultipart(req) {
       });
     });
 
-    busboy.on('finish', () => {
-      if (fileInfo) {
-        resolve(fileInfo);
-      } else {
-        reject(new Error('No audio file provided'));
+    busboy.on('finish', async () => {
+      try {
+        if (fileWritePromise) {
+          await fileWritePromise;
+        }
+        
+        if (fileInfo) {
+          resolve(fileInfo);
+        } else {
+          reject(new Error('No audio file provided'));
+        }
+      } catch (err) {
+        reject(err);
       }
     });
 
