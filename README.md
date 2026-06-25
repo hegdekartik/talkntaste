@@ -22,7 +22,7 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | Vanilla JS + Vite |
-| **Backend** | Node.js + Express |
+| **Backend** | Node.js + Express (Local) / Vercel Serverless Functions (Prod) |
 | **Speech-to-Text** | [Sarvam AI](https://sarvam.ai) (Saaras v3) |
 | **Recipe Structuring** | OpenAI GPT-4o-mini (Structured Outputs) |
 | **Audio Recording** | Web MediaRecorder API |
@@ -32,21 +32,20 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 
 ```
 talkntaste/
-├── server/
-│   ├── index.js          # Express API server
-│   ├── sarvam.js         # Sarvam AI STT service
-│   ├── openai.js         # OpenAI recipe structuring
-│   └── package.json
-├── client/
-│   ├── index.html        # SPA shell (mobile-first)
-│   ├── style.css         # Design system
+├── api/                  # Vercel Serverless Functions (Production API)
+│   ├── _lib/             # Shared utilities (parseMultipart, sarvam, openai)
+│   ├── process.js        # POST /api/process
+│   └── ...
+├── server/               # Express API server (Local development)
+│   ├── index.js
+│   └── ...
+├── client/               # Vite frontend SPA
+│   ├── index.html
+│   ├── style.css
 │   ├── js/
-│   │   ├── app.js        # State machine controller
-│   │   ├── recorder.js   # Mic recording + waveform
-│   │   ├── api.js        # Backend API client
-│   │   └── share.js      # Social share formatting
-│   ├── vite.config.js
-│   └── package.json
+│   │   └── ...
+│   └── ...
+├── vercel.json           # Vercel deployment configuration
 ├── .env.example
 ├── .gitignore
 └── package.json
@@ -64,7 +63,7 @@ talkntaste/
 
 ```bash
 # Clone the repo
-git clone https://github.com/your-username/talkntaste.git
+git clone https://github.com/hegdekartik/talkntaste.git
 cd talkntaste
 
 # Install dependencies
@@ -77,7 +76,7 @@ cp .env.example server/.env
 # Edit server/.env with your actual keys
 ```
 
-### Run
+### Run Locally
 
 ```bash
 npm run dev
@@ -85,7 +84,17 @@ npm run dev
 
 This starts both servers concurrently:
 - **Frontend**: http://localhost:5173
-- **Backend**: http://localhost:3001
+- **Backend (Express)**: http://localhost:3001
+
+### Deploy to Vercel
+
+The project is fully configured to deploy to Vercel as a single app.
+
+1. **Push** this repository to GitHub.
+2. **Import** the project into Vercel.
+3. Set the **Framework Preset** to **Vite**.
+4. Add your **Environment Variables** (`SARVAM_API_KEY`, `OPENAI_API_KEY`) in the Vercel dashboard.
+5. **Deploy**. Vercel will build the frontend and deploy the `api/` folder as serverless functions.
 
 ### Test on Mobile
 
