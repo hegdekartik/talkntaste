@@ -1,0 +1,15 @@
+{
+  "name": "talkntaste",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Voice-to-recipe web app for Indian languages",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "cd server && node --watch index.js",
+    "dev:client": "cd client && npx vite",
+    "start": "cd server && node index.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}

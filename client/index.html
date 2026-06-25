@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0f0f0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Speak a recipe in any Indian language. Get a structured recipe card. Share instantly.">
+
+  <title>TalknTaste — Voice to Recipe</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+  <!-- ===== APP CONTAINER ===== -->
+  <div id="app" class="app" data-state="idle">
+
+    <!-- ===== HEADER ===== -->
+    <header class="header">
+      <div class="header__brand">
+        <span class="header__icon">🍳</span>
+        <h1 class="header__title">TalknTaste</h1>
+      </div>
+      <p class="header__tagline">Speak it. Structure it. Share it.</p>
+    </header>
+
+    <!-- ===== INPUT VIEW ===== -->
+    <section id="input-view" class="view view--input">
+      <div class="mic-area">
+        <!-- Waveform canvas (behind the mic button) -->
+        <canvas id="waveform-canvas" class="waveform-canvas" width="300" height="300"></canvas>
+
+        <!-- Main mic button -->
+        <button id="mic-btn" class="mic-btn" aria-label="Start recording">
+          <svg class="mic-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+          <svg class="mic-btn__stop-icon" viewBox="0 0 24 24" fill="currentColor">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </button>
+
+        <!-- Recording timer -->
+        <div id="recording-timer" class="recording-timer">
+          <span class="recording-timer__dot"></span>
+          <span id="timer-display" class="recording-timer__time">0:00</span>
+        </div>
+
+        <!-- Instruction text -->
+        <p id="mic-instruction" class="mic-instruction">Tap to start recording</p>
+      </div>
+
+      <!-- Upload option -->
+      <div class="upload-area">
+        <label id="upload-label" class="upload-label" for="audio-upload">
+          <svg class="upload-label__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <span>or upload an audio file</span>
+          <input id="audio-upload" type="file" accept="audio/*,.mp3,.wav,.webm,.m4a,.ogg,.flac" hidden>
+        </label>
+      </div>
+    </section>
+
+    <!-- ===== PROCESSING VIEW ===== -->
+    <section id="processing-view" class="view view--processing">
+      <div class="processing-card">
+        <div class="processing-steps">
+          <div id="step-transcribe" class="processing-step">
+            <div class="processing-step__indicator">
+              <div class="spinner"></div>
+              <svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="processing-step__label">Transcribing your recipe…</span>
+          </div>
+          <div id="step-structure" class="processing-step">
+            <div class="processing-step__indicator">
+              <div class="spinner"></div>
+              <svg class="checkmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <span class="processing-step__label">Structuring ingredients & steps…</span>
+          </div>
+        </div>
+
+        <!-- Raw transcript preview -->
+        <div id="transcript-preview" class="transcript-preview">
+          <p class="transcript-preview__label">Transcript</p>
+          <p id="transcript-text" class="transcript-preview__text"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== RESULT VIEW ===== -->
+    <section id="result-view" class="view view--result">
+      <!-- Language badge -->
+      <div id="language-badge" class="language-badge">
+        <span class="language-badge__flag">🎙️</span>
+        <span id="language-name" class="language-badge__text">Kannada</span>
+      </div>
+
+      <!-- Recipe Card -->
+      <article id="recipe-card" class="recipe-card">
+        <!-- Title -->
+        <h2 id="recipe-title" class="recipe-card__title" contenteditable="false"></h2>
+
+        <!-- Meta info -->
+        <div class="recipe-card__meta">
+          <span class="recipe-card__meta-item">
+            <span class="recipe-card__meta-icon">⏱️</span>
+            <span id="recipe-prep-time" contenteditable="false"></span>
+          </span>
+          <span class="recipe-card__meta-divider">·</span>
+          <span class="recipe-card__meta-item">
+            <span class="recipe-card__meta-icon">👥</span>
+            <span id="recipe-servings" contenteditable="false"></span>
+          </span>
+        </div>
+
+        <!-- Ingredients -->
+        <div class="recipe-card__section">
+          <h3 class="recipe-card__section-title">
+            <span>📝</span>
+            <span id="ingredients-heading">Ingredients</span>
+          </h3>
+          <ul id="ingredients-list" class="recipe-card__ingredients"></ul>
+          <button id="add-ingredient-btn" class="add-item-btn" style="display:none;">+ Add ingredient</button>
+        </div>
+
+        <!-- Steps -->
+        <div class="recipe-card__section">
+          <h3 class="recipe-card__section-title">
+            <span>👨‍🍳</span>
+            <span id="steps-heading">Steps</span>
+          </h3>
+          <ol id="steps-list" class="recipe-card__steps"></ol>
+          <button id="add-step-btn" class="add-item-btn" style="display:none;">+ Add step</button>
+        </div>
+      </article>
+
+      <!-- Action Bar -->
+      <div class="action-bar">
+        <button id="edit-btn" class="action-btn action-btn--edit" aria-label="Edit recipe">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Edit</span>
+        </button>
+        <button id="share-whatsapp-btn" class="action-btn action-btn--whatsapp" aria-label="Share on WhatsApp">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <span>WhatsApp</span>
+        </button>
+        <button id="share-twitter-btn" class="action-btn action-btn--twitter" aria-label="Share on Twitter">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          <span>Twitter</span>
+        </button>
+        <button id="copy-btn" class="action-btn action-btn--copy" aria-label="Copy to clipboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          <span>Copy</span>
+        </button>
+      </div>
+
+      <!-- New Recipe button -->
+      <button id="new-recipe-btn" class="new-recipe-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>New Recipe</span>
+      </button>
+    </section>
+
+    <!-- ===== ERROR VIEW ===== -->
+    <section id="error-view" class="view view--error">
+      <div class="error-card">
+        <span class="error-card__icon">😔</span>
+        <p id="error-message" class="error-card__message">Something went wrong.</p>
+        <button id="retry-btn" class="error-card__retry-btn">Try Again</button>
+      </div>
+    </section>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast" class="toast" role="alert" aria-live="polite">
+      <span id="toast-message"></span>
+    </div>
+
+  </div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>
