@@ -45,11 +45,11 @@ const recipeSchema = {
             description: 'Quantity with unit in the ORIGINAL language',
           },
           notes: {
-            type: 'string',
+            type: ['string', 'null'],
             description: 'Optional preparation notes in the ORIGINAL language (e.g., "ತೊಳೆದು", "कटा हुआ")',
           },
         },
-        required: ['name', 'quantity'],
+        required: ['name', 'quantity', 'notes'],
         additionalProperties: false,
       },
     },
