@@ -19,9 +19,12 @@ const micInstruction = document.getElementById('mic-instruction');
 const timerDisplay = document.getElementById('timer-display');
 const waveformCanvas = document.getElementById('waveform-canvas');
 const audioUploadInput = document.getElementById('audio-upload');
+const durationTip = document.getElementById('duration-tip');
+const durationTipClose = document.getElementById('duration-tip-close');
 
 // Processing view
 const stepTranscribe = document.getElementById('step-transcribe');
+const stepTranscribeLabel = stepTranscribe?.querySelector('.processing-step__label');
 const stepStructure = document.getElementById('step-structure');
 const transcriptPreview = document.getElementById('transcript-preview');
 const transcriptText = document.getElementById('transcript-text');
@@ -111,7 +114,8 @@ async function stopRecording() {
   timerDisplay.textContent = '0:00';
 
   if (result && result.blob) {
-    await processRecording(result.blob);
+    // Pass recorded duration to processRecording for batch mode detection
+    await processRecording(result.blob, result.duration);
   }
 }
 
@@ -127,7 +131,28 @@ function handleMicClick() {
 // ============================================================
 // File Upload
 // ============================================================
-function handleFileUpload(file) {
+
+/** Max audio duration in seconds */
+const MAX_AUDIO_DURATION = 180; // 3 minutes
+
+/**
+ * Get the duration of an audio Blob/File using Web Audio API.
+ * @param {Blob|File} blob
+ * @returns {Promise<number|null>} duration in seconds, or null if undetectable
+ */
+async function getAudioDuration(blob) {
+  try {
+    const arrayBuffer = await blob.arrayBuffer();
+    const audioCtx = new AudioContext();
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    audioCtx.close();
+    return audioBuffer.duration;
+  } catch {
+    return null;
+  }
+}
+
+async function handleFileUpload(file) {
   if (!file) return;
 
   if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|webm|m4a|ogg|flac)$/i)) {
@@ -135,16 +160,29 @@ function handleFileUpload(file) {
     return;
   }
 
-  processRecording(file);
+  // Client-side duration check
+  const duration = await getAudioDuration(file);
+  if (duration !== null && duration > MAX_AUDIO_DURATION) {
+    showToast(`Audio is too long (${Math.round(duration)}s). Please keep it under 3 minutes.`);
+    return;
+  }
+
+  processRecording(file, duration);
 }
 
 
 // ============================================================
 // Processing Pipeline
 // ============================================================
-async function processRecording(audioBlob) {
+async function processRecording(audioBlob, knownDuration = null) {
   setState('processing');
   resetProcessingView();
+
+  // Show batch mode messaging if audio is long
+  const isBatchMode = knownDuration !== null && knownDuration > 30;
+  if (isBatchMode && stepTranscribeLabel) {
+    stepTranscribeLabel.textContent = 'Processing longer audio…';
+  }
 
   try {
     // Activate first step indicator
@@ -194,6 +232,10 @@ function resetProcessingView() {
   stepStructure.classList.remove('active', 'done');
   transcriptPreview.classList.remove('visible');
   transcriptText.textContent = '';
+  // Reset transcribe label
+  if (stepTranscribeLabel) {
+    stepTranscribeLabel.textContent = 'Transcribing your recipe…';
+  }
 }
 
 
@@ -529,6 +571,13 @@ function init() {
 
   // Drag & drop
   setupDragDrop();
+
+  // Duration tip dismiss
+  if (durationTipClose) {
+    durationTipClose.addEventListener('click', () => {
+      durationTip.classList.add('hidden');
+    });
+  }
 
   // Set initial state
   setState('idle');
