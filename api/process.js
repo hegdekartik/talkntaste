@@ -1,6 +1,7 @@
 import { parseMultipart, cleanupFile } from './_lib/parseMultipart.js';
 import { transcribeAudio } from './_lib/sarvam.js';
 import { structureRecipe } from './_lib/openai.js';
+import { saveRecipe } from './_lib/supabase.js';
 
 /**
  * Vercel Serverless Function config:
@@ -42,10 +43,20 @@ export default async function handler(req, res) {
     // Step 2: Structure
     const recipe = await structureRecipe(transcript, language);
 
+    // Step 3: Save to Supabase (fire-and-forget — don't block response)
+    const recipeId = await saveRecipe({
+      recipe,
+      transcript,
+      language,
+      audioFilePath: filePath,
+      originalName,
+    });
+
     res.status(200).json({
       transcript,
       detectedLanguage: language,
       recipe,
+      recipeId: recipeId || null,
     });
   } catch (error) {
     console.error('[API] Process error:', error.message);

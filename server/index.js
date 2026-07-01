@@ -7,6 +7,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { transcribeAudio } from './sarvam.js';
 import { structureRecipe } from './openai.js';
+import { saveRecipe } from './supabase.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -113,10 +114,20 @@ app.post('/api/process', upload.single('audio'), async (req, res) => {
     // Step 2: Structure
     const recipe = await structureRecipe(transcript, language);
 
+    // Step 3: Save to Supabase (fire-and-forget — don't block response)
+    const recipeId = await saveRecipe({
+      recipe,
+      transcript,
+      language,
+      audioFilePath: req.file.path,
+      originalName: req.file.originalname,
+    });
+
     res.json({
       transcript,
       detectedLanguage: language,
       recipe,
+      recipeId: recipeId || null,
     });
   } catch (error) {
     console.error('[API] Process error:', error.message);

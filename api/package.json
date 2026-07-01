@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.0",
     "busboy": "^1.6.0",
     "music-metadata": "^11.13.0",
     "openai": "^4.77.0",
