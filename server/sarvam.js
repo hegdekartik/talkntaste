@@ -88,7 +88,17 @@ export async function transcribeAudio(filePath, originalName) {
     return await transcribeSync(filePath, originalName);
   } catch (syncError) {
     const msg = (syncError?.message || '').toLowerCase();
-    const isDurationError = msg.includes('duration') || msg.includes('length') || msg.includes('too long') || msg.includes('limit') || syncError?.statusCode === 413;
+    const statusCode = syncError?.statusCode || syncError?.status;
+
+    // Only fall back to batch for clear duration/length errors, NOT generic 'limit' errors
+    const isDurationError =
+      msg.includes('duration') ||
+      msg.includes('too long') ||
+      msg.includes('audio length') ||
+      msg.includes('exceeds') ||
+      statusCode === 413;
+
+    console.log(`[Sarvam] Sync failed: "${syncError?.message}" | statusCode=${statusCode} | isDurationError=${isDurationError}`);
 
     if (isDurationError) {
       console.log(`[Sarvam] Sync API rejected (likely >30s) — falling back to BATCH API for ${originalName}`);
@@ -211,7 +221,7 @@ async function transcribeBatch(filePath, originalName) {
 
     console.log(`[Sarvam Batch] Got upload URL for ${fileName}`);
 
-    // Step 3: Upload file to signed URL
+    // Step 3: Upload file to signed URL (Azure Blob Storage)
     console.log('[Sarvam Batch] Uploading audio file...');
     const fileBuffer = fs.readFileSync(filePath);
     const uploadRes = await fetch(uploadUrl, {
@@ -219,6 +229,7 @@ async function transcribeBatch(filePath, originalName) {
       body: fileBuffer,
       headers: {
         'Content-Type': 'application/octet-stream',
+        'x-ms-blob-type': 'BlockBlob', // Required by Azure Blob Storage
       },
     });
 
