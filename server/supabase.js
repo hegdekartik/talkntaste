@@ -98,10 +98,23 @@ async function uploadAudio(filePath, originalName) {
     const storagePath = `${randomUUID()}${ext}`;
     const fileBuffer = fs.readFileSync(filePath);
 
+    // Derive MIME type from extension instead of hardcoding audio/webm
+    const mimeMap = {
+      '.webm': 'audio/webm',
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.m4a': 'audio/mp4',
+      '.ogg': 'audio/ogg',
+      '.flac': 'audio/flac',
+      '.aac': 'audio/aac',
+      '.opus': 'audio/ogg',
+    };
+    const contentType = mimeMap[ext.toLowerCase()] || 'audio/webm';
+
     const { error } = await sb.storage
       .from('recipe-audio')
       .upload(storagePath, fileBuffer, {
-        contentType: 'audio/webm',
+        contentType,
         upsert: false,
       });
 
@@ -144,14 +157,21 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
     // Generate tags
     const tags = generateTags(recipe, transcript);
 
+    // Validate servings — OpenAI might return a string instead of an integer
+    let servings = recipe.servings;
+    if (servings !== null && servings !== undefined) {
+      servings = parseInt(servings, 10);
+      if (isNaN(servings)) servings = null;
+    }
+
     // Insert into recipes table
     const { data, error } = await sb
       .from('recipes')
       .insert({
-        title: recipe.title,
+        title: recipe.title || 'Untitled Recipe',
         language: recipe.language || language || 'unknown',
         language_name: recipe.languageName || 'Unknown',
-        servings: recipe.servings || null,
+        servings: servings || null,
         prep_time: recipe.prepTime || null,
         ingredients: recipe.ingredients || [],
         steps: recipe.steps || [],

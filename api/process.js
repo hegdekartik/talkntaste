@@ -5,12 +5,15 @@ import { saveRecipe } from './_lib/supabase.js';
 
 /**
  * Vercel Serverless Function config:
- * Disable the default body parser so we can handle multipart/form-data manually via busboy.
+ * - Disable the default body parser so we can handle multipart/form-data manually via busboy.
+ * - Extend maxDuration to 120s to allow batch transcription polling for long audio (>30s).
+ *   Requires Vercel Pro plan (Hobby is limited to 10s).
  */
 export const config = {
   api: {
     bodyParser: false,
   },
+  maxDuration: 120,
 };
 
 /**

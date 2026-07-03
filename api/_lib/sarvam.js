@@ -34,11 +34,15 @@ async function getAudioDuration(filePath) {
     console.warn('[Sarvam] Could not parse audio metadata:', err.message);
   }
 
-  // Fallback: estimate from file size (assumes ~128kbps)
+  // Fallback: estimate from file size
+  // Browser-recorded WebM/Opus is typically 24–64kbps; we use 32kbps (4KB/s)
+  // as a conservative estimate to avoid under-counting long recordings.
   try {
     const stats = fs.statSync(filePath);
-    const estimatedDuration = stats.size / (128 * 1024 / 8); // 128kbps = 16KB/s
-    console.log(`[Sarvam] Estimated duration from file size: ${estimatedDuration.toFixed(1)}s`);
+    const ext = path.extname(filePath).toLowerCase();
+    const bytesPerSecond = ['.webm', '.ogg', '.opus'].includes(ext) ? (32 * 1024 / 8) : (128 * 1024 / 8);
+    const estimatedDuration = stats.size / bytesPerSecond;
+    console.log(`[Sarvam] Estimated duration from file size: ${estimatedDuration.toFixed(1)}s (assuming ${bytesPerSecond * 8 / 1024}kbps for ${ext || 'unknown'})`);
     return estimatedDuration;
   } catch {
     return null;
@@ -76,9 +80,22 @@ export async function transcribeAudio(filePath, originalName) {
   if (useBatchApi) {
     console.log(`[Sarvam] Using BATCH API for ${originalName} (${duration.toFixed(1)}s > ${SYNC_MAX_DURATION}s)`);
     return transcribeBatch(filePath, originalName);
-  } else {
-    console.log(`[Sarvam] Using SYNC API for ${originalName}`);
-    return transcribeSync(filePath, originalName);
+  }
+
+  // Sync path — with automatic fallback to batch if sync rejects due to duration
+  console.log(`[Sarvam] Using SYNC API for ${originalName}${duration === null ? ' (duration unknown — will fallback to batch if needed)' : ''}`);
+  try {
+    return await transcribeSync(filePath, originalName);
+  } catch (syncError) {
+    const msg = (syncError?.message || '').toLowerCase();
+    const isDurationError = msg.includes('duration') || msg.includes('length') || msg.includes('too long') || msg.includes('limit') || syncError?.statusCode === 413;
+
+    if (isDurationError) {
+      console.log(`[Sarvam] Sync API rejected (likely >30s) — falling back to BATCH API for ${originalName}`);
+      return transcribeBatch(filePath, originalName);
+    }
+
+    throw syncError; // Re-throw non-duration errors
   }
 }
 
@@ -105,14 +122,8 @@ async function transcribeSync(filePath, originalName) {
     };
   } catch (error) {
     console.error('[Sarvam] Sync transcription error:', error?.message || error);
-
-    if (error?.message?.includes('duration') || error?.message?.includes('length') || error?.statusCode === 413) {
-      throw new Error(
-        'Audio file exceeds the 30-second sync API limit. The batch fallback also failed. Please try a shorter recording.'
-      );
-    }
-
-    throw new Error(`Transcription failed: ${error?.message || 'Unknown error'}`);
+    // Let the caller (transcribeAudio) handle fallback logic
+    throw error;
   }
 }
 
@@ -181,7 +192,8 @@ async function transcribeBatch(filePath, originalName) {
     const uploadUrl = uploadUrlData.upload_urls?.[0] || uploadUrlData.urls?.[0];
 
     if (!uploadUrl) {
-      throw new Error('No upload URL returned from Sarvam batch API');
+      console.error('[Sarvam Batch] Upload URL response was:', JSON.stringify(uploadUrlData, null, 2));
+      throw new Error(`No upload URL returned from Sarvam batch API. Full response: ${JSON.stringify(uploadUrlData)}`);
     }
 
     // Step 3: Upload file to signed URL
@@ -253,22 +265,41 @@ async function transcribeBatch(filePath, originalName) {
     }
 
     // Step 6: Download results
+    // Sarvam batch outputs are numbered files — for a single-file job, request "0.json".
+    // We also try without the files array as a fallback for API version differences.
     console.log('[Sarvam Batch] Downloading results...');
+    let downloadData;
+
+    // Try with explicit files array first (per Sarvam docs)
     const downloadRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/download-files`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ job_id: jobId }),
+      body: JSON.stringify({ job_id: jobId, files: ['0.json'] }),
     });
 
-    if (!downloadRes.ok) {
-      const errBody = await downloadRes.text();
-      throw new Error(`Failed to download results: ${downloadRes.status} — ${errBody}`);
+    if (downloadRes.ok) {
+      downloadData = await downloadRes.json();
+    } else {
+      // Fallback: try without files array
+      console.log('[Sarvam Batch] Retrying download without files array...');
+      const fallbackRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/download-files`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ job_id: jobId }),
+      });
+
+      if (!fallbackRes.ok) {
+        const errBody = await fallbackRes.text();
+        throw new Error(`Failed to download results: ${fallbackRes.status} — ${errBody}`);
+      }
+
+      downloadData = await fallbackRes.json();
     }
 
-    const downloadData = await downloadRes.json();
     const downloadUrl = downloadData.download_urls?.[0] || downloadData.urls?.[0];
 
     if (!downloadUrl) {
+      console.error('[Sarvam Batch] Download response:', JSON.stringify(downloadData, null, 2));
       throw new Error('No download URL returned from Sarvam batch API');
     }
 
@@ -278,7 +309,19 @@ async function transcribeBatch(filePath, originalName) {
       throw new Error(`Failed to fetch transcript result: ${resultRes.status}`);
     }
 
-    const resultData = await resultRes.json();
+    // The result may be a JSON file or plain text
+    const resultText = await resultRes.text();
+    let resultData;
+    try {
+      resultData = JSON.parse(resultText);
+    } catch {
+      // If the result is plain text (not JSON), treat it as the transcript
+      console.log('[Sarvam Batch] Result was plain text, not JSON');
+      return {
+        transcript: resultText.trim(),
+        language: 'unknown',
+      };
+    }
 
     // Extract transcript — batch results may have different structures
     const transcript = resultData.transcript
