@@ -189,12 +189,27 @@ async function transcribeBatch(filePath, originalName) {
     }
 
     const uploadUrlData = await uploadUrlRes.json();
-    const uploadUrl = uploadUrlData.upload_urls?.[0] || uploadUrlData.urls?.[0];
+
+    // Sarvam returns upload_urls as an object keyed by filename:
+    //   { "recording.webm": { "file_url": "https://...", "file_metadata": null } }
+    let uploadUrl;
+    if (uploadUrlData.upload_urls && typeof uploadUrlData.upload_urls === 'object') {
+      const firstFile = uploadUrlData.upload_urls[fileName] || Object.values(uploadUrlData.upload_urls)[0];
+      uploadUrl = firstFile?.file_url || firstFile?.url || firstFile;
+      // If firstFile is a string URL directly
+      if (typeof firstFile === 'string') uploadUrl = firstFile;
+    }
+    // Fallback: maybe it's an array
+    if (!uploadUrl) {
+      uploadUrl = uploadUrlData.urls?.[0];
+    }
 
     if (!uploadUrl) {
       console.error('[Sarvam Batch] Upload URL response was:', JSON.stringify(uploadUrlData, null, 2));
       throw new Error(`No upload URL returned from Sarvam batch API. Full response: ${JSON.stringify(uploadUrlData)}`);
     }
+
+    console.log(`[Sarvam Batch] Got upload URL for ${fileName}`);
 
     // Step 3: Upload file to signed URL
     console.log('[Sarvam Batch] Uploading audio file...');
@@ -296,7 +311,20 @@ async function transcribeBatch(filePath, originalName) {
       downloadData = await fallbackRes.json();
     }
 
-    const downloadUrl = downloadData.download_urls?.[0] || downloadData.urls?.[0];
+    // Sarvam returns download_urls as an object keyed by filename (similar to upload_urls)
+    let downloadUrl;
+    if (downloadData.download_urls && typeof downloadData.download_urls === 'object') {
+      if (Array.isArray(downloadData.download_urls)) {
+        downloadUrl = downloadData.download_urls[0];
+      } else {
+        const firstFile = Object.values(downloadData.download_urls)[0];
+        downloadUrl = firstFile?.file_url || firstFile?.url || firstFile;
+        if (typeof firstFile === 'string') downloadUrl = firstFile;
+      }
+    }
+    if (!downloadUrl) {
+      downloadUrl = downloadData.urls?.[0];
+    }
 
     if (!downloadUrl) {
       console.error('[Sarvam Batch] Download response:', JSON.stringify(downloadData, null, 2));
