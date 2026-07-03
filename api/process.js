@@ -1,7 +1,7 @@
 import { parseMultipart, cleanupFile } from './_lib/parseMultipart.js';
 import { transcribeAudio } from './_lib/sarvam.js';
 import { structureRecipe } from './_lib/openai.js';
-import { saveRecipe } from './_lib/supabase.js';
+import { saveRecipe, uploadAudio } from './_lib/supabase.js';
 
 /**
  * Vercel Serverless Function config:
@@ -35,7 +35,22 @@ export default async function handler(req, res) {
     console.log(`[API] Full pipeline: ${originalName}`);
 
     // Step 1: Transcribe
-    const { transcript, language } = await transcribeAudio(filePath, originalName);
+    const transcribeResult = await transcribeAudio(filePath, originalName);
+
+    if (transcribeResult.isBatch) {
+      // For long audio, we upload to storage now before Vercel kills this function.
+      // The frontend will poll /api/poll to get the final result.
+      const audioPath = await uploadAudio(filePath, originalName);
+      
+      return res.status(202).json({
+        status: 'processing',
+        jobId: transcribeResult.jobId,
+        audioPath,
+        originalName,
+      });
+    }
+
+    const { transcript, language } = transcribeResult;
 
     if (!transcript) {
       return res.status(422).json({
@@ -56,6 +71,7 @@ export default async function handler(req, res) {
     });
 
     res.status(200).json({
+      status: 'completed',
       transcript,
       detectedLanguage: language,
       recipe,

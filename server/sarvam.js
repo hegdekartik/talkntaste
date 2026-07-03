@@ -79,7 +79,8 @@ export async function transcribeAudio(filePath, originalName) {
 
   if (useBatchApi) {
     console.log(`[Sarvam] Using BATCH API for ${originalName} (${duration.toFixed(1)}s > ${SYNC_MAX_DURATION}s)`);
-    return transcribeBatch(filePath, originalName);
+    const jobId = await startBatchJob(filePath, originalName);
+    return { isBatch: true, jobId };
   }
 
   // Sync path — with automatic fallback to batch if sync rejects due to duration
@@ -102,7 +103,8 @@ export async function transcribeAudio(filePath, originalName) {
 
     if (isDurationError) {
       console.log(`[Sarvam] Sync API rejected (likely >30s) — falling back to BATCH API for ${originalName}`);
-      return transcribeBatch(filePath, originalName);
+      const jobId = await startBatchJob(filePath, originalName);
+      return { isBatch: true, jobId };
     }
 
     throw syncError; // Re-throw non-duration errors
@@ -138,17 +140,16 @@ async function transcribeSync(filePath, originalName) {
 }
 
 /**
- * Batch transcription via Sarvam REST API (30s–3min audio).
+ * Start a batch transcription job (30s–3min audio).
  *
  * Workflow:
  * 1. Create job
  * 2. Get upload URL
  * 3. Upload file to signed URL
  * 4. Start job
- * 5. Poll status until complete
- * 6. Download results
+ * 5. Return jobId for polling
  */
-async function transcribeBatch(filePath, originalName) {
+export async function startBatchJob(filePath, originalName) {
   const apiKey = process.env.SARVAM_API_KEY;
   if (!apiKey) {
     throw new Error('SARVAM_API_KEY is not configured');
@@ -250,48 +251,57 @@ async function transcribeBatch(filePath, originalName) {
       throw new Error(`Failed to start batch job: ${startRes.status} — ${errBody}`);
     }
 
-    // Step 5: Poll for completion
-    console.log('[Sarvam Batch] Polling for completion...');
-    const startTime = Date.now();
+    return jobId;
+  } catch (error) {
+    console.error('[Sarvam Batch] Error starting job:', error.message);
+    throw new Error(`Failed to start batch job: ${error.message}`);
+  }
+}
 
-    while (true) {
-      const statusRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/${jobId}/status`, {
-        method: 'GET',
-        headers: {
-          'api-subscription-key': apiKey,
-        },
-      });
+/**
+ * Check status of a batch transcription job and download if completed.
+ *
+ * @param {string} jobId
+ * @returns {Promise<{ status: string, transcript?: string, language?: string }>}
+ */
+export async function checkBatchJob(jobId) {
+  const apiKey = process.env.SARVAM_API_KEY;
+  if (!apiKey) {
+    throw new Error('SARVAM_API_KEY is not configured');
+  }
 
-      if (!statusRes.ok) {
-        const errBody = await statusRes.text();
-        throw new Error(`Failed to check job status: ${statusRes.status} — ${errBody}`);
-      }
+  const headers = {
+    'api-subscription-key': apiKey,
+    'Content-Type': 'application/json',
+  };
 
-      const statusData = await statusRes.json();
-      const jobStatus = (statusData.status || '').toLowerCase();
+  try {
+    const statusRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/${jobId}/status`, {
+      method: 'GET',
+      headers: {
+        'api-subscription-key': apiKey,
+      },
+    });
 
-      console.log(`[Sarvam Batch] Job status: ${jobStatus}`);
+    if (!statusRes.ok) {
+      const errBody = await statusRes.text();
+      throw new Error(`Failed to check job status: ${statusRes.status} — ${errBody}`);
+    }
 
-      if (jobStatus === 'completed' || jobStatus === 'finished' || jobStatus === 'done') {
-        break;
-      }
+    const statusData = await statusRes.json();
+    const jobStatus = (statusData.status || '').toLowerCase();
 
-      if (jobStatus === 'failed' || jobStatus === 'error') {
-        throw new Error(`Batch transcription job failed: ${statusData.error || statusData.message || 'Unknown error'}`);
-      }
+    console.log(`[Sarvam Batch] Job ${jobId} status: ${jobStatus}`);
 
-      // Timeout check
-      if (Date.now() - startTime > POLL_TIMEOUT_MS) {
-        throw new Error('Batch transcription timed out. Please try again with a shorter recording.');
-      }
+    if (jobStatus === 'failed' || jobStatus === 'error') {
+      throw new Error(`Batch transcription job failed: ${statusData.error || statusData.message || 'Unknown error'}`);
+    }
 
-      // Wait before polling again
-      await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+    if (jobStatus !== 'completed' && jobStatus !== 'finished' && jobStatus !== 'done') {
+      return { status: 'processing' };
     }
 
     // Step 6: Download results
-    // Sarvam batch outputs are numbered files — for a single-file job, request "0.json".
-    // We also try without the files array as a fallback for API version differences.
     console.log('[Sarvam Batch] Downloading results...');
     let downloadData;
 
@@ -356,6 +366,7 @@ async function transcribeBatch(filePath, originalName) {
       // If the result is plain text (not JSON), treat it as the transcript
       console.log('[Sarvam Batch] Result was plain text, not JSON');
       return {
+        status: 'completed',
         transcript: resultText.trim(),
         language: 'unknown',
       };
@@ -369,14 +380,15 @@ async function transcribeBatch(filePath, originalName) {
 
     const language = resultData.language_code || resultData.language || 'unknown';
 
-    console.log(`[Sarvam Batch] Transcribed ${originalName} | Language: ${language} | Length: ${transcript.length} chars`);
+    console.log(`[Sarvam Batch] Job ${jobId} completed | Language: ${language} | Length: ${transcript.length} chars`);
 
     return {
+      status: 'completed',
       transcript: transcript.trim(),
       language,
     };
   } catch (error) {
-    console.error('[Sarvam Batch] Error:', error.message);
-    throw new Error(`Batch transcription failed: ${error.message}`);
+    console.error('[Sarvam Batch] Error checking job:', error.message);
+    throw new Error(`Failed to check batch job: ${error.message}`);
   }
 }

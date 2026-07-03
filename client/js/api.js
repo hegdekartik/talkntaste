@@ -25,12 +25,43 @@ export async function processAudio(audioBlob, callbacks = {}) {
     body: formData,
   });
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 202) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
     throw new Error(error.error || `Server returned ${response.status}`);
   }
 
-  const data = await response.json();
+  let data = await response.json();
+
+  // If the server returns 202 Accepted, it means it's processing a long audio file in the background.
+  // We need to poll the server for the result.
+  if (response.status === 202 || data.status === 'processing') {
+    const { jobId, audioPath, originalName } = data;
+    
+    while (true) {
+      // Wait 3 seconds before polling
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      const pollResponse = await fetch(`${API_BASE}/poll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jobId, audioPath, originalName }),
+      });
+      
+      if (!pollResponse.ok) {
+        const error = await pollResponse.json().catch(() => ({ error: 'Polling error' }));
+        throw new Error(error.error || `Server returned ${pollResponse.status}`);
+      }
+      
+      data = await pollResponse.json();
+      
+      if (data.status === 'completed') {
+        break; // Done polling
+      }
+      // Otherwise, it's still processing, so loop again
+    }
+  }
 
   if (callbacks.onStructuring) callbacks.onStructuring();
 

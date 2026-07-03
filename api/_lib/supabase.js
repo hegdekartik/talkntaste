@@ -83,13 +83,13 @@ export function generateTags(recipe, transcript = '') {
 }
 
 /**
- * Upload audio file to Supabase Storage.
+ * Upload an audio file to Supabase storage.
  *
- * @param {string} filePath - Path to the audio file on disk (e.g. /tmp/...)
- * @param {string} originalName - Original filename
+ * @param {string} filePath - Local path to the file
+ * @param {string} originalName - Original filename (for extension)
  * @returns {Promise<string|null>} Storage path or null on failure
  */
-async function uploadAudio(filePath, originalName) {
+export async function uploadAudio(filePath, originalName) {
   const sb = getSupabase();
   if (!sb || !filePath) return null;
 
@@ -140,10 +140,11 @@ async function uploadAudio(filePath, originalName) {
  * @param {string} params.transcript - Raw transcript from Sarvam
  * @param {string} params.language - Detected language code
  * @param {string} [params.audioFilePath] - Path to audio file on disk (for upload)
+ * @param {string} [params.audioPath] - Existing storage path (if already uploaded)
  * @param {string} [params.originalName] - Original audio filename
  * @returns {Promise<string|null>} Recipe UUID or null on failure
  */
-export async function saveRecipe({ recipe, transcript, language, audioFilePath, originalName }) {
+export async function saveRecipe({ recipe, transcript, language, audioFilePath, audioPath, originalName }) {
   const sb = getSupabase();
   if (!sb) {
     console.warn('[Supabase] Client not initialized — skipping save');
@@ -151,8 +152,11 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
   }
 
   try {
-    // Upload audio to storage (non-blocking if it fails)
-    const audioPath = await uploadAudio(audioFilePath, originalName);
+    // Upload audio to storage if not already uploaded
+    let finalAudioPath = audioPath;
+    if (!finalAudioPath && audioFilePath) {
+      finalAudioPath = await uploadAudio(audioFilePath, originalName);
+    }
 
     // Generate tags
     const tags = generateTags(recipe, transcript);
@@ -177,7 +181,7 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
         steps: recipe.steps || [],
         transcript: transcript || null,
         tags,
-        audio_path: audioPath,
+        audio_path: finalAudioPath || null,
       })
       .select('id')
       .single();

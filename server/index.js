@@ -5,9 +5,9 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { transcribeAudio } from './sarvam.js';
+import { checkBatchJob, transcribeAudio } from './sarvam.js';
 import { structureRecipe } from './openai.js';
-import { saveRecipe } from './supabase.js';
+import { saveRecipe, uploadAudio } from './supabase.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -105,7 +105,22 @@ app.post('/api/process', upload.single('audio'), async (req, res) => {
     console.log(`[API] Full pipeline: ${req.file.originalname} (${(req.file.size / 1024).toFixed(1)}KB)`);
 
     // Step 1: Transcribe
-    const { transcript, language } = await transcribeAudio(req.file.path, req.file.originalname);
+    const transcribeResult = await transcribeAudio(req.file.path, req.file.originalname);
+
+    if (transcribeResult.isBatch) {
+      // For long audio, we upload to storage now before Vercel kills this function.
+      // The frontend will poll /api/poll to get the final result.
+      const audioPath = await uploadAudio(req.file.path, req.file.originalname);
+      
+      return res.status(202).json({
+        status: 'processing',
+        jobId: transcribeResult.jobId,
+        audioPath,
+        originalName: req.file.originalname,
+      });
+    }
+
+    const { transcript, language } = transcribeResult;
 
     if (!transcript) {
       return res.status(422).json({ error: 'Could not extract any text from the audio. Please try again with clearer audio.' });
@@ -124,6 +139,7 @@ app.post('/api/process', upload.single('audio'), async (req, res) => {
     });
 
     res.json({
+      status: 'completed',
       transcript,
       detectedLanguage: language,
       recipe,
@@ -134,6 +150,55 @@ app.post('/api/process', upload.single('audio'), async (req, res) => {
     res.status(500).json({ error: error.message });
   } finally {
     cleanupFile(req.file?.path);
+  }
+});
+
+/**
+ * POST /api/poll
+ * Polling endpoint for long audio processed via Sarvam Batch API.
+ */
+app.post('/api/poll', async (req, res) => {
+  const { jobId, audioPath, originalName } = req.body;
+
+  if (!jobId) {
+    return res.status(400).json({ error: 'Missing jobId' });
+  }
+
+  try {
+    const jobResult = await checkBatchJob(jobId);
+
+    if (jobResult.status === 'processing') {
+      return res.status(202).json({ status: 'processing' });
+    }
+
+    const { transcript, language } = jobResult;
+
+    if (!transcript) {
+      return res.status(422).json({ error: 'Could not extract any text from the audio. Please try again with clearer audio.' });
+    }
+
+    // Step 2: Structure
+    const recipe = await structureRecipe(transcript, language);
+
+    // Step 3: Save to Supabase (using the audioPath already uploaded in step 1)
+    const recipeId = await saveRecipe({
+      recipe,
+      transcript,
+      language,
+      audioPath,
+      originalName,
+    });
+
+    res.json({
+      status: 'completed',
+      transcript,
+      detectedLanguage: language,
+      recipe,
+      recipeId: recipeId || null,
+    });
+  } catch (error) {
+    console.error('[API] Poll error:', error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
