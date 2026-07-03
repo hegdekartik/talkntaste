@@ -289,7 +289,7 @@ export async function checkBatchJob(jobId) {
     }
 
     const statusData = await statusRes.json();
-    const jobStatus = (statusData.status || '').toLowerCase();
+    const jobStatus = (statusData.status || statusData.job_state || '').toLowerCase();
 
     console.log(`[Sarvam Batch] Job ${jobId} status: ${jobStatus}`);
 
