@@ -240,10 +240,9 @@ async function transcribeBatch(filePath, originalName) {
 
     // Step 4: Start the job
     console.log('[Sarvam Batch] Starting job...');
-    const startRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/start`, {
+    const startRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/${jobId}/start`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ job_id: jobId }),
     });
 
     if (!startRes.ok) {
