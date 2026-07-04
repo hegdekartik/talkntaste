@@ -37,7 +37,10 @@ export async function processAudio(audioBlob, callbacks = {}) {
   if (response.status === 202 || data.status === 'processing') {
     const { jobId, audioPath, originalName } = data;
     
-    while (true) {
+    const MAX_POLLS = 40; // 40 × 3s = 2 minutes max wait
+    let polls = 0;
+
+    while (polls++ < MAX_POLLS) {
       // Wait 3 seconds before polling
       await new Promise(resolve => setTimeout(resolve, 3000));
       
@@ -49,7 +52,7 @@ export async function processAudio(audioBlob, callbacks = {}) {
         body: JSON.stringify({ jobId, audioPath, originalName }),
       });
       
-      if (!pollResponse.ok) {
+      if (!pollResponse.ok && pollResponse.status !== 202) {
         const error = await pollResponse.json().catch(() => ({ error: 'Polling error' }));
         throw new Error(error.error || `Server returned ${pollResponse.status}`);
       }
@@ -60,6 +63,10 @@ export async function processAudio(audioBlob, callbacks = {}) {
         break; // Done polling
       }
       // Otherwise, it's still processing, so loop again
+    }
+
+    if (data.status !== 'completed') {
+      throw new Error('Transcription is taking too long. Please try again with a shorter recording.');
     }
   }
 

@@ -241,7 +241,7 @@ export async function startBatchJob(filePath, originalName) {
 
     // Step 3: Upload file to signed URL (Azure Blob Storage)
     console.log('[Sarvam Batch] Uploading audio file...');
-    const fileBuffer = fs.readFileSync(filePath);
+    const fileBuffer = await fs.promises.readFile(filePath);
     const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
       body: fileBuffer,

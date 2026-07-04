@@ -109,9 +109,12 @@ async function startRecording() {
 async function stopRecording() {
   if (!recorder) return;
 
-  const result = await recorder.stop();
+  // Null immediately to prevent double-stop race (onMaxReached + user click)
+  const r = recorder;
   recorder = null;
   timerDisplay.textContent = '0:00';
+
+  const result = await r.stop();
 
   if (result && result.blob) {
     // Pass recorded duration to processRecording for batch mode detection

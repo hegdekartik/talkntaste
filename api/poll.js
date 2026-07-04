@@ -3,6 +3,16 @@ import { structureRecipe } from './_lib/openai.js';
 import { saveRecipe } from './_lib/supabase.js';
 
 /**
+ * Vercel Serverless Function config:
+ * - Extend maxDuration to 60s. When the batch job completes, this handler
+ *   downloads the transcript from Sarvam, structures it via OpenAI, and
+ *   saves to Supabase — that chain can exceed Vercel's default 10s timeout.
+ */
+export const config = {
+  maxDuration: 60,
+};
+
+/**
  * POST /api/poll
  * Polling endpoint for long audio processed via Sarvam Batch API.
  * Request body: { jobId, audioPath, originalName }
