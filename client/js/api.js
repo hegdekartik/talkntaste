@@ -18,11 +18,48 @@ export async function processAudio(audioBlob, callbacks = {}) {
 
   if (callbacks.onTranscribing) callbacks.onTranscribing();
 
-  // Step 1: Transcribe
-  const processResponse = await fetch(`${API_BASE}/process`, {
+  // Step 1: Get Upload URL
+  const uploadUrlRes = await fetch(`${API_BASE}/upload-url`, {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ originalName: `recording.${ext}` })
   });
+
+  if (!uploadUrlRes.ok) {
+    throw new Error('Network error: Could not get upload URL from server.');
+  }
+
+  const { uploadUrl, storagePath } = await uploadUrlRes.json();
+
+  // Step 2: Direct Upload to Supabase Storage
+  try {
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: audioBlob,
+      headers: {
+        'Content-Type': audioBlob.type || 'audio/webm'
+      }
+    });
+    if (!uploadRes.ok) {
+      throw new Error(`Upload failed with status ${uploadRes.status}`);
+    }
+  } catch (err) {
+    console.error('[API] Direct upload error:', err);
+    throw new Error('Network error: Failed to upload audio file. Please check your connection.');
+  }
+
+  // Step 3: Transcribe
+  let processResponse;
+  try {
+    processResponse = await fetch(`${API_BASE}/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storagePath, originalName: `recording.${ext}` }),
+    });
+  } catch (err) {
+    console.error('[API] fetch /process error:', err);
+    throw new Error('Network error: Connection failed while processing the audio.');
+  }
 
   if (!processResponse.ok && processResponse.status !== 202) {
     const error = await processResponse.json().catch(() => ({ error: 'Server error' }));
@@ -41,11 +78,17 @@ export async function processAudio(audioBlob, callbacks = {}) {
   if (callbacks.onStructuring) callbacks.onStructuring();
 
   // Step 2: Structure
-  const structureResponse = await fetch(`${API_BASE}/structure`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ transcript, language: detectedLanguage }),
-  });
+  let structureResponse;
+  try {
+    structureResponse = await fetch(`${API_BASE}/structure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript, language: detectedLanguage }),
+    });
+  } catch (err) {
+    console.error('[API] fetch /structure error:', err);
+    throw new Error('Network error: Could not connect to the server to structure the recipe.');
+  }
 
   if (!structureResponse.ok) {
     const error = await structureResponse.json().catch(() => ({ error: 'Server error' }));
@@ -77,12 +120,49 @@ export async function processAudio(audioBlob, callbacks = {}) {
 export async function transcribeAudio(audioBlob) {
   const formData = new FormData();
   const ext = getExtension(audioBlob.type);
-  formData.append('audio', audioBlob, `recording.${ext}`);
 
-  const response = await fetch(`${API_BASE}/transcribe`, {
+  // Step 1: Get Upload URL
+  const uploadUrlRes = await fetch(`${API_BASE}/upload-url`, {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ originalName: `recording.${ext}` })
   });
+
+  if (!uploadUrlRes.ok) {
+    throw new Error('Network error: Could not get upload URL from server.');
+  }
+
+  const { uploadUrl, storagePath } = await uploadUrlRes.json();
+
+  // Step 2: Direct Upload to Supabase Storage
+  try {
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: audioBlob,
+      headers: {
+        'Content-Type': audioBlob.type || 'audio/webm'
+      }
+    });
+    if (!uploadRes.ok) {
+      throw new Error(`Upload failed with status ${uploadRes.status}`);
+    }
+  } catch (err) {
+    console.error('[API] Direct upload error:', err);
+    throw new Error('Network error: Failed to upload audio file. Please check your connection.');
+  }
+
+  // Step 3: Transcribe
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/transcribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ storagePath, originalName: `recording.${ext}` }),
+    });
+  } catch (err) {
+    console.error('[API] fetch /transcribe error:', err);
+    throw new Error('Network error: Connection failed while processing the audio.');
+  }
 
   if (!response.ok && response.status !== 202) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
@@ -107,11 +187,17 @@ export async function transcribeAudio(audioBlob) {
  * @returns {Promise<object>}
  */
 export async function structureRecipe(transcript, language) {
-  const response = await fetch(`${API_BASE}/structure`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ transcript, language }),
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/structure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript, language }),
+    });
+  } catch (err) {
+    console.error('[API] fetch /structure error:', err);
+    throw new Error('Network error: Could not connect to the server to structure the recipe.');
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
@@ -154,13 +240,19 @@ async function pollForResult(initialData) {
     // Wait 3 seconds before polling
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    const pollResponse = await fetch(`${API_BASE}/poll`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ jobId, audioPath, originalName }),
-    });
+    let pollResponse;
+    try {
+      pollResponse = await fetch(`${API_BASE}/poll`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jobId, audioPath, originalName }),
+      });
+    } catch (err) {
+      console.error('[API] fetch /poll error:', err);
+      throw new Error('Network error: Connection to the polling server failed.');
+    }
     
     if (!pollResponse.ok && pollResponse.status !== 202) {
       const error = await pollResponse.json().catch(() => ({ error: 'Polling error' }));

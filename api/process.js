@@ -1,17 +1,8 @@
-import { parseMultipart, cleanupFile } from './_lib/parseMultipart.js';
+import fs from 'fs';
 import { transcribeAudio } from './_lib/sarvam.js';
-import { uploadAudio } from './_lib/supabase.js';
+import { downloadAudio } from './_lib/supabase.js';
 
-/**
- * Vercel Serverless Function config:
- * - Disable the default body parser so we can handle multipart/form-data manually via busboy.
- * - Extend maxDuration to 120s to allow batch transcription polling for long audio (>30s).
- *   Requires Vercel Pro plan (Hobby is limited to 10s).
- */
 export const config = {
-  api: {
-    bodyParser: false,
-  },
   maxDuration: 120,
 };
 
@@ -28,24 +19,26 @@ export default async function handler(req, res) {
   let filePath;
 
   try {
-    const { filePath: tmpPath, originalName } = await parseMultipart(req);
-    filePath = tmpPath;
+    const { storagePath, originalName } = req.body || {};
 
-    console.log(`[API] Full pipeline: ${originalName}`);
+    if (!storagePath) {
+      return res.status(400).json({ error: 'Missing storagePath' });
+    }
 
-    // Step 1: Transcribe & Upload in parallel
-    // (Uploading early saves 1-2s of execution time, crucial for 10s Vercel Hobby limits)
-    const [transcribeResult, audioPath] = await Promise.all([
-      transcribeAudio(filePath, originalName),
-      uploadAudio(filePath, originalName)
-    ]);
+    console.log(`[API] Full pipeline for ${originalName}, path: ${storagePath}`);
+
+    // Download audio from Supabase to local /tmp for Sarvam
+    filePath = await downloadAudio(storagePath);
+
+    // Transcribe
+    const transcribeResult = await transcribeAudio(filePath, originalName);
 
     if (transcribeResult.isBatch) {
       // For long audio, Vercel would timeout. We return 202 to trigger client polling.
       return res.status(202).json({
         status: 'processing',
         jobId: transcribeResult.jobId,
-        audioPath,
+        audioPath: storagePath,
         originalName,
       });
     }
@@ -63,13 +56,19 @@ export default async function handler(req, res) {
       status: 'completed',
       transcript,
       detectedLanguage: language,
-      audioPath,
+      audioPath: storagePath,
       originalName,
     });
   } catch (error) {
     console.error('[API] Process error:', error.message);
     res.status(500).json({ error: error.message });
   } finally {
-    cleanupFile(filePath);
+    if (filePath) {
+      try {
+        fs.unlinkSync(filePath);
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    }
   }
 }

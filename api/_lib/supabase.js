@@ -132,6 +132,62 @@ export async function uploadAudio(filePath, originalName) {
 }
 
 /**
+ * Generate a signed upload URL for the client.
+ *
+ * @param {string} originalName - Original filename (for extension)
+ * @returns {Promise<{ uploadUrl: string, storagePath: string }>}
+ */
+export async function generateUploadUrl(originalName) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase client not initialized');
+
+  const ext = path.extname(originalName || 'recording.webm') || '.webm';
+  const storagePath = `${randomUUID()}${ext}`;
+
+  const { data, error } = await sb.storage
+    .from('recipe-audio')
+    .createSignedUploadUrl(storagePath);
+
+  if (error) {
+    console.error('[Supabase Storage] createSignedUploadUrl error:', error.message);
+    throw new Error(`Failed to create upload URL: ${error.message}`);
+  }
+
+  return {
+    uploadUrl: data.signedUrl,
+    storagePath
+  };
+}
+
+/**
+ * Download an audio file from Supabase Storage to a local /tmp path.
+ *
+ * @param {string} storagePath - Path in Supabase storage
+ * @returns {Promise<string>} Local file path
+ */
+export async function downloadAudio(storagePath) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase client not initialized');
+
+  const { data, error } = await sb.storage
+    .from('recipe-audio')
+    .download(storagePath);
+
+  if (error) {
+    console.error('[Supabase Storage] download error:', error.message);
+    throw new Error(`Failed to download audio from storage: ${error.message}`);
+  }
+
+  const localPath = path.join('/tmp', storagePath);
+  const buffer = Buffer.from(await data.arrayBuffer());
+  fs.writeFileSync(localPath, buffer);
+  
+  console.log(`[Supabase Storage] Downloaded ${storagePath} to ${localPath}`);
+  return localPath;
+}
+
+
+/**
  * Save a recipe to Supabase.
  * This is fire-and-forget — errors are logged but don't break the pipeline.
  *
