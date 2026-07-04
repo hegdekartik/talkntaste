@@ -1,4 +1,5 @@
 import { generateUploadUrl } from './_lib/supabase.js';
+import { getRawBody } from './getRawBody.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -7,6 +8,9 @@ export default async function handler(req, res) {
   }
 
   let body = req.body;
+  if (!body) {
+    try { body = await getRawBody(req); } catch (e) {}
+  }
   if (body instanceof Buffer) body = body.toString('utf8');
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) {}
