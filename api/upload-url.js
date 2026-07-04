@@ -6,7 +6,12 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { originalName } = req.body || {};
+  let body = req.body;
+  if (body instanceof Buffer) body = body.toString('utf8');
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {}
+  }
+  const { originalName } = body || {};
 
   try {
     const { uploadUrl, storagePath } = await generateUploadUrl(originalName);
