@@ -148,6 +148,7 @@ async function transcribeSync(filePath, originalName) {
     return {
       transcript: transcript.trim(),
       language,
+      debugData: transcript.trim() ? null : response,
     };
   } catch (error) {
     console.error('[Sarvam] Sync transcription error:', error?.message || error);
@@ -418,6 +419,7 @@ export async function checkBatchJob(jobId) {
       status: 'completed',
       transcript: transcript.trim(),
       language,
+      debugData: transcript.trim() ? null : resultData,
     };
   } catch (error) {
     console.error('[Sarvam Batch] Error checking job:', error.message);

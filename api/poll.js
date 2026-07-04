@@ -39,6 +39,7 @@ export default async function handler(req, res) {
     if (!transcript) {
       return res.status(422).json({
         error: 'Could not extract any text from the audio. Please try again with clearer audio.',
+        details: jobResult.debugData ? JSON.stringify(jobResult.debugData) : 'No debug data available.',
       });
     }
 

@@ -26,7 +26,7 @@ export async function processAudio(audioBlob, callbacks = {}) {
 
   if (!processResponse.ok && processResponse.status !== 202) {
     const error = await processResponse.json().catch(() => ({ error: 'Server error' }));
-    throw new Error(error.error || `Server returned ${processResponse.status}`);
+    throw new Error(`${error.error || 'Server returned ' + processResponse.status}${error.details ? '\n\nDebug Info: ' + error.details : ''}`);
   }
 
   let data = await processResponse.json();
@@ -86,7 +86,7 @@ export async function transcribeAudio(audioBlob) {
 
   if (!response.ok && response.status !== 202) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
-    throw new Error(error.error || `Server returned ${response.status}`);
+    throw new Error(`${error.error || 'Server returned ' + response.status}${error.details ? '\n\nDebug Info: ' + error.details : ''}`);
   }
 
   let data = await response.json();
@@ -164,7 +164,7 @@ async function pollForResult(initialData) {
     
     if (!pollResponse.ok && pollResponse.status !== 202) {
       const error = await pollResponse.json().catch(() => ({ error: 'Polling error' }));
-      throw new Error(error.error || `Server returned ${pollResponse.status}`);
+      throw new Error(`${error.error || 'Server returned ' + pollResponse.status}${error.details ? '\n\nDebug Info: ' + error.details : ''}`);
     }
     
     data = await pollResponse.json();
