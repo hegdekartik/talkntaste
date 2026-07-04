@@ -71,7 +71,36 @@ let isEditing = false;
 // ============================================================
 function setState(newState) {
   currentState = newState;
-  app.setAttribute('data-state', newState);
+  
+  if (!document.startViewTransition) {
+    app.setAttribute('data-state', newState);
+    routeFocus(newState);
+    return;
+  }
+  
+  const transition = document.startViewTransition(() => {
+    app.setAttribute('data-state', newState);
+  });
+  
+  transition.finished.finally(() => {
+    routeFocus(newState);
+  });
+}
+
+function routeFocus(state) {
+  // Use setTimeout to ensure the new view is fully rendered/display:flex before focusing
+  setTimeout(() => {
+    if (state === 'result' || state === 'editing') {
+      recipeTitle.setAttribute('tabindex', '-1');
+      recipeTitle.focus();
+    } else if (state === 'processing') {
+      const pView = document.getElementById('processing-view');
+      pView.setAttribute('tabindex', '-1');
+      pView.focus();
+    } else if (state === 'idle') {
+      micBtn.focus();
+    }
+  }, 10);
 }
 
 

@@ -179,6 +179,14 @@ ul, ol {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Fallback for when View Transitions are active */
+::view-transition-group(root) {
+  animation-duration: var(--duration-normal);
+}
+::view-transition-new(root) {
+  animation-name: fadeIn;
+}
+
 
 /* ---- Mic Area ---- */
 .mic-area {
@@ -218,9 +226,11 @@ ul, ol {
   position: relative;
   z-index: 2;
   transition: transform var(--duration-fast) var(--ease-spring),
-              box-shadow var(--duration-normal) var(--ease-out);
+              box-shadow var(--duration-normal) var(--ease-out),
+              background var(--duration-normal) var(--ease-out);
   box-shadow: 0 0 0 0 var(--accent-glow),
-              0 8px 32px rgba(245, 158, 11, 0.25);
+              0 8px 32px rgba(245, 158, 11, 0.3),
+              inset 0 2px 4px rgba(255, 255, 255, 0.2);
 }
 
 .mic-btn:active {
@@ -250,8 +260,16 @@ ul, ol {
 [data-state="recording"] .mic-btn__stop-icon { display: block; }
 
 @keyframes micPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4), 0 8px 32px rgba(239, 68, 68, 0.3); }
-  50% { box-shadow: 0 0 0 20px rgba(239, 68, 68, 0), 0 8px 32px rgba(239, 68, 68, 0.3); }
+  0%, 100% { 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4), 
+                0 8px 32px rgba(239, 68, 68, 0.3),
+                inset 0 2px 4px rgba(255, 255, 255, 0.2); 
+  }
+  50% { 
+    box-shadow: 0 0 0 24px rgba(239, 68, 68, 0), 
+                0 12px 40px rgba(239, 68, 68, 0.5),
+                inset 0 2px 4px rgba(255, 255, 255, 0); 
+  }
 }
 
 
@@ -422,6 +440,8 @@ ul, ol {
   border-radius: var(--radius-lg);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5), 
+              0 4px 16px -8px rgba(245, 158, 11, 0.1);
 }
 
 .processing-steps {
@@ -541,6 +561,8 @@ ul, ol {
   padding: var(--space-xl);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 48px -8px rgba(0, 0, 0, 0.6), 
+              0 8px 24px -12px rgba(245, 158, 11, 0.15);
   animation: cardEnter var(--duration-slow) var(--ease-out);
 }
 
@@ -769,6 +791,27 @@ ul, ol {
   background: rgba(239, 68, 68, 0.2);
 }
 
+/* ---- Scroll-Driven Animations for List Items ---- */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .ingredient-item, .step-item {
+      animation: listReveal linear both;
+      animation-timeline: view();
+      animation-range: entry 5% cover 20%;
+    }
+    
+    @keyframes listReveal {
+      from {
+        opacity: 0;
+        transform: translateY(16px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+  }
+}
 
 /* ---- Add Item Button ---- */
 .add-item-btn {
@@ -798,10 +841,11 @@ ul, ol {
   margin-top: var(--space-xl);
   padding: var(--space-md);
   background: var(--bg-glass);
-  border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.5);
 }
 
 .action-btn {
