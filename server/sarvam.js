@@ -103,13 +103,18 @@ export async function transcribeAudio(filePath, originalName) {
     const msg = (syncError?.message || '').toLowerCase();
     const statusCode = syncError?.statusCode || syncError?.status;
 
-    // Only fall back to batch for clear duration/length errors, NOT generic 'limit' errors
+    // Only fall back to batch for clear duration/length errors, NOT generic 'limit' errors.
+    // IMPORTANT: The Sarvam SDK throws UnprocessableEntityError (422) for >30s audio.
+    // The error message is literally "UnprocessableEntityError", NOT "duration" or "too long".
+    // So we must also check for statusCode 422 from the sync speech-to-text endpoint.
     const isDurationError =
       msg.includes('duration') ||
       msg.includes('too long') ||
       msg.includes('audio length') ||
       msg.includes('exceeds') ||
-      statusCode === 413;
+      msg.includes('unprocessableentity') ||
+      statusCode === 413 ||
+      statusCode === 422;
 
     console.log(`[Sarvam] Sync failed: "${syncError?.message}" | statusCode=${statusCode} | isDurationError=${isDurationError}`);
 
@@ -384,13 +389,28 @@ export async function checkBatchJob(jobId) {
       };
     }
 
-    // Extract transcript — batch results may have different structures
-    const transcript = resultData.transcript
-      || resultData.text
-      || (resultData.segments && resultData.segments.map((s) => s.text || s.transcript).join(' '))
+    // Extract transcript — batch results may have different structures.
+    // Sarvam batch output (0.json) can be:
+    //   - { transcript: "...", language_code: "..." }  (most common)
+    //   - An array: [{ transcript: "...", language_code: "..." }, ...]
+    //   - { outputs: [{ transcript: "..." }] }
+    let transcriptSource = resultData;
+    if (Array.isArray(resultData)) {
+      // Array of utterances — join all transcript fields
+      transcriptSource = { transcript: resultData.map((r) => r.transcript || r.text || '').join(' ') };
+    } else if (Array.isArray(resultData.outputs)) {
+      transcriptSource = resultData.outputs[0] || {};
+    }
+
+    const transcript = transcriptSource.transcript
+      || transcriptSource.text
+      || (transcriptSource.segments && transcriptSource.segments.map((s) => s.text || s.transcript).join(' '))
       || '';
 
-    const language = resultData.language_code || resultData.language || 'unknown';
+    console.log(`[Sarvam Batch] Raw result keys: ${Object.keys(Array.isArray(resultData) ? (resultData[0] || {}) : resultData).join(', ')}`);
+
+    const language = transcriptSource.language_code || transcriptSource.language
+      || resultData.language_code || resultData.language || 'unknown';
 
     console.log(`[Sarvam Batch] Job ${jobId} completed | Language: ${language} | Length: ${transcript.length} chars`);
 
