@@ -19,33 +19,37 @@ const POLL_TIMEOUT_MS = 120_000; // 2 minutes max wait
 
 /**
  * Get the duration of an audio file in seconds.
- * Uses music-metadata for most formats, falls back to file-size heuristic for webm.
+ * Uses music-metadata for accurate duration, falls back to file-size heuristic.
  *
  * @param {string} filePath
- * @returns {Promise<number|null>} duration in seconds, or null if unknown
+ * @returns {Promise<{ duration: number|null, isEstimate: boolean }>}
+ *   duration in seconds (or null if unknown), and whether it's an estimate
  */
 async function getAudioDuration(filePath) {
+  // Try music-metadata first (accurate for formats that embed duration)
   try {
     const metadata = await parseFile(filePath);
     if (metadata.format.duration && metadata.format.duration > 0) {
-      return metadata.format.duration;
+      return { duration: metadata.format.duration, isEstimate: false };
     }
   } catch (err) {
     console.warn('[Sarvam] Could not parse audio metadata:', err.message);
   }
 
-  // Fallback: estimate from file size
-  // Browser-recorded WebM/Opus is typically 24–64kbps; we use 32kbps (4KB/s)
-  // as a conservative estimate to avoid under-counting long recordings.
+  // Fallback: estimate from file size.
+  // Browser-recorded WebM/Opus typically uses 128kbps (set via audioBitsPerSecond in recorder).
+  // We use 128kbps (16KB/s) for WebM/Opus to match the actual recording bitrate.
+  // For other formats (mp3, wav, etc.) we use 128kbps as a reasonable estimate.
   try {
     const stats = fs.statSync(filePath);
     const ext = path.extname(filePath).toLowerCase();
-    const bytesPerSecond = ['.webm', '.ogg', '.opus'].includes(ext) ? (32 * 1024 / 8) : (128 * 1024 / 8);
+    // 128kbps = 16,384 bytes/sec — matches the recorder's audioBitsPerSecond: 128000
+    const bytesPerSecond = ['.webm', '.ogg', '.opus'].includes(ext) ? (128 * 1024 / 8) : (128 * 1024 / 8);
     const estimatedDuration = stats.size / bytesPerSecond;
-    console.log(`[Sarvam] Estimated duration from file size: ${estimatedDuration.toFixed(1)}s (assuming ${bytesPerSecond * 8 / 1024}kbps for ${ext || 'unknown'})`);
-    return estimatedDuration;
+    console.log(`[Sarvam] Estimated duration from file size: ${estimatedDuration.toFixed(1)}s (${stats.size} bytes, assuming ${bytesPerSecond * 8 / 1024}kbps for ${ext || 'unknown'})`);
+    return { duration: estimatedDuration, isEstimate: true };
   } catch {
-    return null;
+    return { duration: null, isEstimate: false };
   }
 }
 
@@ -54,7 +58,11 @@ async function getAudioDuration(filePath) {
  *
  * - ≤30s: Synchronous REST API (instant response)
  * - 30s–3min: Batch API (async job with polling)
- * - >3min: Rejected with error
+ * - >3min: Rejected with error (only for accurate/metadata durations)
+ *
+ * For estimated durations (file-size heuristic), we never hard-reject — the estimate
+ * is only used to decide sync vs batch routing. The Sarvam API itself will reject
+ * if the audio is truly too long.
  *
  * @param {string} filePath - Path to the audio file on disk (e.g. /tmp/...)
  * @param {string} originalName - Original filename for logging
@@ -62,23 +70,27 @@ async function getAudioDuration(filePath) {
  */
 export async function transcribeAudio(filePath, originalName) {
   // Step 0: Get duration
-  const duration = await getAudioDuration(filePath);
+  const { duration, isEstimate } = await getAudioDuration(filePath);
 
   if (duration !== null) {
-    console.log(`[Sarvam] Audio duration: ${duration.toFixed(1)}s | File: ${originalName}`);
+    console.log(`[Sarvam] Audio duration: ${duration.toFixed(1)}s${isEstimate ? ' (estimated from file size)' : ' (from metadata)'} | File: ${originalName}`);
 
-    if (duration > ABSOLUTE_MAX_DURATION) {
+    // Only hard-reject on accurate metadata duration, never on estimates.
+    // File-size estimates can be wildly inaccurate (e.g. variable bitrate, container overhead).
+    if (!isEstimate && duration > ABSOLUTE_MAX_DURATION) {
       throw new Error(
         `Audio is too long (${Math.round(duration)}s). Please keep recordings under 3 minutes.`
       );
     }
   }
 
-  // Decide which path to take
-  const useBatchApi = duration !== null && duration > SYNC_MAX_DURATION;
+  // Decide which path to take.
+  // For estimated durations, use a higher threshold to avoid false batch routing.
+  const syncThreshold = isEstimate ? SYNC_MAX_DURATION * 1.5 : SYNC_MAX_DURATION;
+  const useBatchApi = duration !== null && duration > syncThreshold;
 
   if (useBatchApi) {
-    console.log(`[Sarvam] Using BATCH API for ${originalName} (${duration.toFixed(1)}s > ${SYNC_MAX_DURATION}s)`);
+    console.log(`[Sarvam] Using BATCH API for ${originalName} (${duration.toFixed(1)}s > ${syncThreshold}s)`);
     const jobId = await startBatchJob(filePath, originalName);
     return { isBatch: true, jobId };
   }
