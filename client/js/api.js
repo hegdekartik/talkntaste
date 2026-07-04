@@ -32,42 +32,9 @@ export async function processAudio(audioBlob, callbacks = {}) {
 
   let data = await response.json();
 
-  // If the server returns 202 Accepted, it means it's processing a long audio file in the background.
-  // We need to poll the server for the result.
+  // If the server returns 202 Accepted, it's processing in the background. Poll for result.
   if (response.status === 202 || data.status === 'processing') {
-    const { jobId, audioPath, originalName } = data;
-    
-    const MAX_POLLS = 40; // 40 × 3s = 2 minutes max wait
-    let polls = 0;
-
-    while (polls++ < MAX_POLLS) {
-      // Wait 3 seconds before polling
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const pollResponse = await fetch(`${API_BASE}/poll`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ jobId, audioPath, originalName }),
-      });
-      
-      if (!pollResponse.ok && pollResponse.status !== 202) {
-        const error = await pollResponse.json().catch(() => ({ error: 'Polling error' }));
-        throw new Error(error.error || `Server returned ${pollResponse.status}`);
-      }
-      
-      data = await pollResponse.json();
-      
-      if (data.status === 'completed') {
-        break; // Done polling
-      }
-      // Otherwise, it's still processing, so loop again
-    }
-
-    if (data.status !== 'completed') {
-      throw new Error('Transcription is taking too long. Please try again with a shorter recording.');
-    }
+    data = await pollForResult(data);
   }
 
   if (callbacks.onStructuring) callbacks.onStructuring();
@@ -91,12 +58,19 @@ export async function transcribeAudio(audioBlob) {
     body: formData,
   });
 
-  if (!response.ok) {
+  if (!response.ok && response.status !== 202) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
     throw new Error(error.error || `Server returned ${response.status}`);
   }
 
-  return response.json();
+  let data = await response.json();
+
+  // Handle batch polling for transcribe-only flow
+  if (response.status === 202 || data.isBatch || data.status === 'processing') {
+    data = await pollForResult(data);
+  }
+
+  return data;
 }
 
 /**
@@ -135,4 +109,44 @@ function getExtension(mimeType) {
     'audio/flac': 'flac',
   };
   return map[mimeType] || 'webm';
+}
+
+/**
+ * Poll the server for the result of a batch job.
+ * 
+ * @param {object} initialData - The response data containing jobId
+ * @returns {Promise<object>} The final completed data
+ */
+async function pollForResult(initialData) {
+  let data = initialData;
+  const { jobId, audioPath, originalName } = data;
+  
+  const MAX_POLLS = 40; // 40 × 3s = 2 minutes max wait
+  let polls = 0;
+
+  while (polls++ < MAX_POLLS) {
+    // Wait 3 seconds before polling
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    const pollResponse = await fetch(`${API_BASE}/poll`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ jobId, audioPath, originalName }),
+    });
+    
+    if (!pollResponse.ok && pollResponse.status !== 202) {
+      const error = await pollResponse.json().catch(() => ({ error: 'Polling error' }));
+      throw new Error(error.error || `Server returned ${pollResponse.status}`);
+    }
+    
+    data = await pollResponse.json();
+    
+    if (data.status === 'completed') {
+      return data; // Done polling
+    }
+  }
+
+  throw new Error('Processing is taking too long. Please try again with a shorter recording.');
 }

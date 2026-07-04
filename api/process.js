@@ -34,14 +34,15 @@ export default async function handler(req, res) {
 
     console.log(`[API] Full pipeline: ${originalName}`);
 
-    // Step 1: Transcribe
-    const transcribeResult = await transcribeAudio(filePath, originalName);
+    // Step 1: Transcribe & Upload in parallel
+    // (Uploading early saves 1-2s of execution time, crucial for 10s Vercel Hobby limits)
+    const [transcribeResult, audioPath] = await Promise.all([
+      transcribeAudio(filePath, originalName),
+      uploadAudio(filePath, originalName)
+    ]);
 
     if (transcribeResult.isBatch) {
-      // For long audio, we upload to storage now before Vercel kills this function.
-      // The frontend will poll /api/poll to get the final result.
-      const audioPath = await uploadAudio(filePath, originalName);
-      
+      // For long audio, Vercel would timeout. We return 202 to trigger client polling.
       return res.status(202).json({
         status: 'processing',
         jobId: transcribeResult.jobId,
@@ -66,7 +67,7 @@ export default async function handler(req, res) {
       recipe,
       transcript,
       language,
-      audioFilePath: filePath,
+      audioPath, // Already uploaded in Step 1
       originalName,
     });
 

@@ -44,6 +44,13 @@ export function parseMultipart(req) {
       });
     });
 
+    req.on('aborted', () => {
+      if (fileInfo && fileInfo.filePath) {
+        fs.unlink(fileInfo.filePath, () => {});
+      }
+      reject(new Error('Request aborted by client'));
+    });
+
     busboy.on('finish', async () => {
       try {
         if (fileWritePromise) {
