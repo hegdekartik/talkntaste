@@ -13,33 +13,59 @@ const API_BASE = '/api';
  */
 export async function processAudio(audioBlob, callbacks = {}) {
   const formData = new FormData();
-
-  // Determine file extension from mime type
   const ext = getExtension(audioBlob.type);
   formData.append('audio', audioBlob, `recording.${ext}`);
 
   if (callbacks.onTranscribing) callbacks.onTranscribing();
 
-  const response = await fetch(`${API_BASE}/process`, {
+  // Step 1: Transcribe
+  const processResponse = await fetch(`${API_BASE}/process`, {
     method: 'POST',
     body: formData,
   });
 
-  if (!response.ok && response.status !== 202) {
-    const error = await response.json().catch(() => ({ error: 'Server error' }));
-    throw new Error(error.error || `Server returned ${response.status}`);
+  if (!processResponse.ok && processResponse.status !== 202) {
+    const error = await processResponse.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Server returned ${processResponse.status}`);
   }
 
-  let data = await response.json();
+  let data = await processResponse.json();
 
   // If the server returns 202 Accepted, it's processing in the background. Poll for result.
-  if (response.status === 202 || data.status === 'processing') {
+  if (processResponse.status === 202 || data.status === 'processing') {
     data = await pollForResult(data);
   }
 
+  const { transcript, detectedLanguage, audioPath, originalName } = data;
+
   if (callbacks.onStructuring) callbacks.onStructuring();
 
-  return data;
+  // Step 2: Structure
+  const structureResponse = await fetch(`${API_BASE}/structure`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ transcript, language: detectedLanguage }),
+  });
+
+  if (!structureResponse.ok) {
+    const error = await structureResponse.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Failed to structure recipe: ${structureResponse.status}`);
+  }
+
+  const { recipe } = await structureResponse.json();
+
+  // Step 3: Save (fire-and-forget, but we await to get ID)
+  fetch(`${API_BASE}/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe, transcript, language: detectedLanguage, audioPath, originalName }),
+  }).catch(err => console.error('[API] Failed to save recipe to database:', err));
+
+  return {
+    transcript,
+    detectedLanguage,
+    recipe,
+  };
 }
 
 /**
