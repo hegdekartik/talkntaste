@@ -1,0 +1,26 @@
+# render.yaml — Render Blueprint
+# Deploy this repo's API as a Web Service on Render.
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: talkntaste-api
+    runtime: node
+    region: singapore  # Close to India for low latency
+    plan: free
+    rootDir: api
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SARVAM_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false  # Set to your Vercel frontend URL for CORS

@@ -1,8 +1,13 @@
 {
   "type": "module",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.0",
     "busboy": "^1.6.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
     "music-metadata": "^11.13.0",
     "openai": "^4.77.0",
     "sarvamai": "^1.1.7"

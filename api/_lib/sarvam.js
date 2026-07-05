@@ -335,8 +335,24 @@ export async function checkBatchJob(jobId, originalName = 'recording.webm') {
     // Step 6: Download results
     console.log('[Sarvam Batch] Downloading results...');
     let downloadData;
-    const fileName = path.basename(originalName || 'recording.webm');
-    const expectedJsonFile = `${fileName}.json`;
+    
+    // Extract the exact filename from statusData if available, otherwise default to '0.json'
+    let expectedJsonFile = '0.json';
+    if (statusData.job_details && Array.isArray(statusData.job_details)) {
+      for (const detail of statusData.job_details) {
+        if (detail.outputs && Array.isArray(detail.outputs)) {
+          const jsonOutput = detail.outputs.find(out => out.file_name && out.file_name.endsWith('.json'));
+          if (jsonOutput) {
+            expectedJsonFile = jsonOutput.file_name;
+            break;
+          } else if (detail.outputs.length > 0 && detail.outputs[0].file_name) {
+            expectedJsonFile = detail.outputs[0].file_name;
+          }
+        }
+      }
+    }
+
+    console.log(`[Sarvam Batch] Requesting file: ${expectedJsonFile}`);
 
     // Try with explicit files array first (per Sarvam docs)
     const downloadRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/download-files`, {
@@ -348,20 +364,24 @@ export async function checkBatchJob(jobId, originalName = 'recording.webm') {
     if (downloadRes.ok) {
       downloadData = await downloadRes.json();
     } else {
-      // Fallback: try without files array
-      console.log('[Sarvam Batch] Retrying download without files array...');
-      const fallbackRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/download-files`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ job_id: jobId }),
-      });
+      const errBody = await downloadRes.text();
+      // If it failed and we didn't try '0.json', fallback to '0.json'
+      if (expectedJsonFile !== '0.json') {
+        console.log(`[Sarvam Batch] Failed to download ${expectedJsonFile} (${downloadRes.status}). Retrying with '0.json'...`);
+        const fallbackRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/download-files`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ job_id: jobId, files: ['0.json'] }),
+        });
 
-      if (!fallbackRes.ok) {
-        const errBody = await fallbackRes.text();
-        throw new Error(`Failed to download results: ${fallbackRes.status} — ${errBody}`);
+        if (!fallbackRes.ok) {
+          const fallbackErrBody = await fallbackRes.text();
+          throw new Error(`Failed to download results (fallback 0.json): ${fallbackRes.status} — ${fallbackErrBody}`);
+        }
+        downloadData = await fallbackRes.json();
+      } else {
+        throw new Error(`Failed to download results: ${downloadRes.status} — ${errBody}`);
       }
-
-      downloadData = await fallbackRes.json();
     }
 
     // Sarvam returns download_urls as an object keyed by filename (similar to upload_urls)
