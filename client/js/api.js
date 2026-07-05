@@ -268,3 +268,27 @@ async function pollForResult(initialData) {
 
   throw new Error('Processing is taking too long. Please try again with a shorter recording.');
 }
+
+/**
+ * Fetch recent recipes from the database.
+ * @returns {Promise<Array>}
+ */
+export async function fetchRecipes() {
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/recipes`, {
+      method: 'GET',
+    });
+  } catch (err) {
+    console.error('[API] fetch /recipes error:', err);
+    throw new Error('Network error: Could not connect to the server to fetch recipes.');
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Failed to fetch recipes: ${response.status}`);
+  }
+
+  const { recipes } = await response.json();
+  return recipes;
+}

@@ -9,6 +9,7 @@ import processHandler from './process.js';
 import pollHandler from './poll.js';
 import structureHandler from './structure.js';
 import saveHandler from './save.js';
+import recipesHandler from './recipes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -53,6 +54,7 @@ app.use(express.json({ limit: '50mb' }));
 // ---------------------------------------------------------------------------
 
 app.get('/api/health', healthHandler);
+app.get('/api/recipes', recipesHandler);
 app.post('/api/upload-url', uploadUrlHandler);
 app.post('/api/transcribe', transcribeHandler);
 app.post('/api/process', processHandler);

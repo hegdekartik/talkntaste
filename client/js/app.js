@@ -5,7 +5,7 @@
  */
 
 import { AudioRecorder, formatTime } from './recorder.js';
-import { processAudio } from './api.js';
+import { processAudio, fetchRecipes } from './api.js';
 import { shareWhatsApp, shareTwitter, copyToClipboard } from './share.js';
 
 // ============================================================
@@ -21,6 +21,11 @@ const waveformCanvas = document.getElementById('waveform-canvas');
 const audioUploadInput = document.getElementById('audio-upload');
 const durationTip = document.getElementById('duration-tip');
 const durationTipClose = document.getElementById('duration-tip-close');
+const libraryBtn = document.getElementById('library-btn');
+
+// Database view
+const backToRecordBtn = document.getElementById('back-to-record-btn');
+const recipeGrid = document.getElementById('recipe-grid');
 
 // Processing view
 const stepTranscribe = document.getElementById('step-transcribe');
@@ -36,10 +41,11 @@ const recipePrepTime = document.getElementById('recipe-prep-time');
 const recipeServings = document.getElementById('recipe-servings');
 const ingredientsList = document.getElementById('ingredients-list');
 const stepsList = document.getElementById('steps-list');
-const ingredientsHeading = document.getElementById('ingredients-heading');
 const stepsHeading = document.getElementById('steps-heading');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const addStepBtn = document.getElementById('add-step-btn');
+const audioPlayerContainer = document.getElementById('audio-player-container');
+const recipeAudio = document.getElementById('recipe-audio');
 
 // Action buttons
 const editBtn = document.getElementById('edit-btn');
@@ -99,8 +105,12 @@ function routeFocus(state) {
       pView.focus();
     } else if (state === 'idle') {
       micBtn.focus();
+    } else if (state === 'database') {
+      const dView = document.getElementById('database-view');
+      dView.setAttribute('tabindex', '-1');
+      dView.focus();
     }
-  }, 10);
+  }, 50); // slight delay to allow flexbox to render
 }
 
 
@@ -157,6 +167,86 @@ function handleMicClick() {
   } else if (currentState === 'recording') {
     stopRecording();
   }
+}
+
+
+// ============================================================
+// Database & Library Logic
+// ============================================================
+
+libraryBtn.addEventListener('click', async () => {
+  setState('processing');
+  stepTranscribeLabel.textContent = 'Fetching library...';
+  stepTranscribe.classList.add('processing-step--active');
+  stepStructure.classList.remove('processing-step--active', 'processing-step--complete');
+  
+  try {
+    const recipes = await fetchRecipes();
+    renderDatabase(recipes);
+    setState('database');
+  } catch (error) {
+    showError(error.message || 'Failed to load recipes');
+  }
+});
+
+backToRecordBtn.addEventListener('click', () => {
+  setState('idle');
+});
+
+function renderDatabase(recipes) {
+  recipeGrid.innerHTML = '';
+  
+  if (!recipes || recipes.length === 0) {
+    recipeGrid.innerHTML = '<p style="color:var(--text-secondary)">No recipes found yet.</p>';
+    return;
+  }
+  
+  recipes.forEach(recipe => {
+    const card = document.createElement('div');
+    card.className = 'recipe-mini-card';
+    
+    const tagsHtml = (recipe.tags || []).slice(0, 3).map(tag => `<span class="rmc-tag">${tag}</span>`).join('');
+    
+    card.innerHTML = `
+      <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
+      <div class="rmc-meta">
+        <span class="rmc-meta-item">⏱️ ${recipe.prep_time || '--'}</span>
+        <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
+      </div>
+      <div class="rmc-tags">
+        <span class="rmc-tag" style="border-color: var(--primary)">${recipe.language_name || 'Unknown'}</span>
+        ${tagsHtml}
+      </div>
+    `;
+    
+    card.addEventListener('click', () => {
+      // Map DB schema back to frontend expected structure
+      currentRecipe = {
+        title: recipe.title,
+        prepTime: recipe.prep_time,
+        servings: recipe.servings,
+        ingredients: recipe.ingredients,
+        steps: recipe.steps,
+        languageName: recipe.language_name
+      };
+      
+      // Render recipe
+      renderRecipe(currentRecipe);
+      
+      // Handle Audio
+      if (recipe.audio_url) {
+        recipeAudio.src = recipe.audio_url;
+        audioPlayerContainer.style.display = 'block';
+      } else {
+        recipeAudio.src = '';
+        audioPlayerContainer.style.display = 'none';
+      }
+      
+      setState('result');
+    });
+    
+    recipeGrid.appendChild(card);
+  });
 }
 
 
@@ -457,9 +547,9 @@ function showError(message) {
 // ============================================================
 function showToast(message, duration = 2500) {
   toastMessage.textContent = message;
-  toast.classList.add('visible');
+  toast.classList.add('show');
   setTimeout(() => {
-    toast.classList.remove('visible');
+    toast.classList.remove('show');
   }, duration);
 }
 
@@ -500,6 +590,14 @@ function getLocalizedLabels(langCode) {
   };
   return labels[langCode] || labels.en;
 }
+
+newRecipeBtn.addEventListener('click', () => {
+  currentRecipe = null;
+  isEditing = false;
+  recipeAudio.src = '';
+  audioPlayerContainer.style.display = 'none';
+  setState('idle');
+});
 
 function resetApp() {
   currentRecipe = null;

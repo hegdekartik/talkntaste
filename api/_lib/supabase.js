@@ -254,3 +254,38 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
     return null;
   }
 }
+
+/**
+ * Fetch recent recipes from the database.
+ * @returns {Promise<Array>} Array of recipe objects
+ */
+export async function getRecipes() {
+  const sb = getSupabase();
+  if (!sb) {
+    throw new Error('Supabase client not initialized');
+  }
+
+  const { data, error } = await sb
+    .from('recipes')
+    .select('id, title, language_name, prep_time, servings, ingredients, steps, tags, audio_path, created_at')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error('[Supabase] getRecipes error:', error.message);
+    throw new Error(`Failed to fetch recipes: ${error.message}`);
+  }
+
+  // Attach public URLs for audio files
+  const recipesWithUrls = data.map(recipe => {
+    let audioUrl = null;
+    if (recipe.audio_path) {
+      const { data: urlData } = sb.storage.from('recipe-audio').getPublicUrl(recipe.audio_path);
+      audioUrl = urlData?.publicUrl || null;
+    }
+    return { ...recipe, audio_url: audioUrl };
+  });
+
+  return recipesWithUrls;
+}
+
