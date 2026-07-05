@@ -243,11 +243,24 @@ export async function startBatchJob(filePath, originalName) {
     // Step 3: Upload file to signed URL (Azure Blob Storage)
     console.log('[Sarvam Batch] Uploading audio file...');
     const fileBuffer = await fs.promises.readFile(filePath);
+    const ext = path.extname(fileName).toLowerCase();
+    const mimeMap = {
+      '.webm': 'audio/webm',
+      '.mp3': 'audio/mpeg',
+      '.wav': 'audio/wav',
+      '.m4a': 'audio/mp4',
+      '.ogg': 'audio/ogg',
+      '.flac': 'audio/flac',
+      '.aac': 'audio/aac',
+      '.opus': 'audio/ogg',
+    };
+    const contentType = mimeMap[ext] || 'application/octet-stream';
+
     const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
       body: fileBuffer,
       headers: {
-        'Content-Type': 'application/octet-stream',
+        'Content-Type': contentType,
         'x-ms-blob-type': 'BlockBlob', // Required by Azure Blob Storage
       },
     });
@@ -282,7 +295,7 @@ export async function startBatchJob(filePath, originalName) {
  * @param {string} jobId
  * @returns {Promise<{ status: string, transcript?: string, language?: string }>}
  */
-export async function checkBatchJob(jobId) {
+export async function checkBatchJob(jobId, originalName = 'recording.webm') {
   const apiKey = process.env.SARVAM_API_KEY;
   if (!apiKey) {
     throw new Error('SARVAM_API_KEY is not configured');
@@ -322,12 +335,14 @@ export async function checkBatchJob(jobId) {
     // Step 6: Download results
     console.log('[Sarvam Batch] Downloading results...');
     let downloadData;
+    const fileName = path.basename(originalName || 'recording.webm');
+    const expectedJsonFile = `${fileName}.json`;
 
     // Try with explicit files array first (per Sarvam docs)
     const downloadRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1/download-files`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ job_id: jobId, files: ['0.json'] }),
+      body: JSON.stringify({ job_id: jobId, files: [expectedJsonFile] }),
     });
 
     if (downloadRes.ok) {
@@ -355,9 +370,12 @@ export async function checkBatchJob(jobId) {
       if (Array.isArray(downloadData.download_urls)) {
         downloadUrl = downloadData.download_urls[0];
       } else {
-        const firstFile = Object.values(downloadData.download_urls)[0];
-        downloadUrl = firstFile?.file_url || firstFile?.url || firstFile;
-        if (typeof firstFile === 'string') downloadUrl = firstFile;
+        // Find the .json output specifically
+        const jsonKey = Object.keys(downloadData.download_urls).find(k => k.endsWith('.json'));
+        const fileObj = jsonKey ? downloadData.download_urls[jsonKey] : Object.values(downloadData.download_urls)[0];
+        
+        downloadUrl = fileObj?.file_url || fileObj?.url || fileObj;
+        if (typeof fileObj === 'string') downloadUrl = fileObj;
       }
     }
     if (!downloadUrl) {

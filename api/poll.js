@@ -28,7 +28,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const jobResult = await checkBatchJob(jobId);
+    const jobResult = await checkBatchJob(jobId, originalName);
 
     if (jobResult.status === 'processing') {
       return res.status(202).json({ status: 'processing' });
