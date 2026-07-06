@@ -41,6 +41,7 @@ const recipeTitle = document.getElementById('recipe-title');
 const recipePrepTime = document.getElementById('recipe-prep-time');
 const recipeServings = document.getElementById('recipe-servings');
 const ingredientsList = document.getElementById('ingredients-list');
+const ingredientsHeading = document.getElementById('ingredients-heading');
 const stepsList = document.getElementById('steps-list');
 const stepsHeading = document.getElementById('steps-heading');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
@@ -202,12 +203,8 @@ function renderDatabase(recipes) {
   
   if (!recipes || recipes.length === 0) {
     recipeCarousel.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 2rem;">No recipes found yet.</p>';
-    carouselProgress.textContent = '';
     return;
   }
-  
-  totalRecipes = recipes.length;
-  carouselProgress.textContent = `1 / ${totalRecipes}`;
   
   recipes.forEach((recipe, index) => {
     const card = document.createElement('div');
@@ -233,13 +230,12 @@ function renderDatabase(recipes) {
       tagsHtml += `<span class="rmc-tag">+${hiddenCount} more</span>`;
     }
     
-    // Use an emoji mapping or default emoji
-    const emojis = ['🥗', '🥘', '🍲', '🍜', '🍛', '🍱', '🥪'];
-    const emoji = emojis[index % emojis.length];
+    // Use a static food image for all recipes
+    const staticImageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
     
     card.innerHTML = `
       <div class="rmc-header">
-        <div class="rmc-emoji">${emoji}</div>
+        <img src="${staticImageUrl}" alt="Food" class="rmc-image" />
         <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
       </div>
       <div class="rmc-meta">
@@ -262,15 +258,7 @@ function renderDatabase(recipes) {
   });
 }
 
-// Carousel scroll listener to update progress indicator
-recipeCarousel.addEventListener('scroll', () => {
-  if (totalRecipes === 0) return;
-  const cardWidth = recipeCarousel.clientWidth * 0.85; // matches 85% flex-basis
-  const scrollLeft = recipeCarousel.scrollLeft;
-  let currentIndex = Math.round(scrollLeft / cardWidth);
-  currentIndex = Math.max(0, Math.min(currentIndex, totalRecipes - 1));
-  carouselProgress.textContent = `${currentIndex + 1} / ${totalRecipes}`;
-});
+// Scroll listener removed for vertical list
 
 function handleCardTap(recipe) {
   currentRecipe = {
@@ -279,7 +267,8 @@ function handleCardTap(recipe) {
     servings: recipe.servings,
     ingredients: recipe.ingredients,
     steps: recipe.steps,
-    languageName: recipe.language_name
+    languageName: recipe.language_name,
+    language: recipe.language
   };
   
   renderRecipe(currentRecipe);

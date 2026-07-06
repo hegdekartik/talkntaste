@@ -24,10 +24,13 @@
 
     <!-- ===== HEADER ===== -->
     <header class="header">
-      <div class="header__brand" style="margin: 0 auto;">
+      <div class="header__brand">
         <span class="header__icon">🍳</span>
         <h1 class="header__title">TalknTaste</h1>
       </div>
+      <button id="library-btn" class="header__library-btn" aria-label="Explore Recipes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      </button>
     </header>
     <p class="header__tagline" style="text-align:center; margin-bottom: 2rem; color: var(--text-secondary); padding: 0 1rem;">Speak your recipe in any Indian language. Get a clean, shareable recipe card.</p>
 
@@ -80,13 +83,7 @@
         </label>
       </div>
       
-      <!-- Bottom Nav / Library Button -->
-      <div class="bottom-nav">
-        <button id="library-btn" class="library-pill-btn" aria-label="View Recipe Library">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          <span>View Recipes</span>
-        </button>
-      </div>
+      <!-- Bottom Nav removed -->
     </section>
 
     <!-- ===== PROCESSING VIEW ===== -->
@@ -143,9 +140,7 @@
         </div>
       </div>
       
-      <div id="carousel-indicators" class="carousel-indicators">
-        <span id="carousel-progress" class="carousel-progress"></span>
-      </div>
+      <!-- Indicators removed -->
     </section>
 
     <!-- ===== RESULT VIEW ===== -->

@@ -267,7 +267,7 @@ export async function getRecipes() {
 
   const { data, error } = await sb
     .from('recipes')
-    .select('id, title, language_name, prep_time, servings, ingredients, steps, tags, audio_path, created_at')
+    .select('id, title, language, language_name, prep_time, servings, ingredients, steps, tags, audio_path, created_at')
     .order('created_at', { ascending: false })
     .limit(50);
 
