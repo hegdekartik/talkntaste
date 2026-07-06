@@ -25,7 +25,8 @@ const libraryBtn = document.getElementById('library-btn');
 
 // Database view
 const backToRecordBtn = document.getElementById('back-to-record-btn');
-const recipeGrid = document.getElementById('recipe-grid');
+const recipeCarousel = document.getElementById('recipe-carousel');
+const carouselProgress = document.getElementById('carousel-progress');
 
 // Processing view
 const stepTranscribe = document.getElementById('step-transcribe');
@@ -171,10 +172,10 @@ function handleMicClick() {
 
 
 // ============================================================
-// Database & Library Logic (Tinder Swipe)
+// Database & Library Logic (Carousel)
 // ============================================================
 let cards = [];
-let currentCardIndex = 0;
+let totalRecipes = 0;
 
 libraryBtn.addEventListener('click', async () => {
   setState('processing');
@@ -196,138 +197,80 @@ backToRecordBtn.addEventListener('click', () => {
 });
 
 function renderDatabase(recipes) {
-  recipeGrid.innerHTML = '';
+  recipeCarousel.innerHTML = '';
   cards = [];
-  currentCardIndex = 0;
   
   if (!recipes || recipes.length === 0) {
-    recipeGrid.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No recipes found yet.</p>';
+    recipeCarousel.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 2rem;">No recipes found yet.</p>';
+    carouselProgress.textContent = '';
     return;
   }
+  
+  totalRecipes = recipes.length;
+  carouselProgress.textContent = `1 / ${totalRecipes}`;
   
   recipes.forEach((recipe, index) => {
     const card = document.createElement('div');
     card.className = 'recipe-mini-card';
+    card.tabIndex = 0;
     
-    const tagsHtml = (recipe.tags || []).slice(0, 3).map(tag => `<span class="rmc-tag">${tag}</span>`).join('');
+    // Deduplicate tags and handle "+X more" logic
+    let rawTags = recipe.tags || [];
+    let lang = recipe.language_name || 'Unknown';
+    let uniqueTags = [lang];
+    
+    rawTags.forEach(tag => {
+      if (tag.toLowerCase() !== lang.toLowerCase() && !uniqueTags.includes(tag)) {
+        uniqueTags.push(tag);
+      }
+    });
+    
+    const visibleTags = uniqueTags.slice(0, 3);
+    const hiddenCount = uniqueTags.length - visibleTags.length;
+    
+    let tagsHtml = visibleTags.map(tag => `<span class="rmc-tag">${tag}</span>`).join('');
+    if (hiddenCount > 0) {
+      tagsHtml += `<span class="rmc-tag">+${hiddenCount} more</span>`;
+    }
+    
+    // Use an emoji mapping or default emoji
+    const emojis = ['🥗', '🥘', '🍲', '🍜', '🍛', '🍱', '🥪'];
+    const emoji = emojis[index % emojis.length];
     
     card.innerHTML = `
-      <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
+      <div class="rmc-header">
+        <div class="rmc-emoji">${emoji}</div>
+        <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
+      </div>
       <div class="rmc-meta">
         <span class="rmc-meta-item">⏱️ ${recipe.prep_time || '--'}</span>
         <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
       </div>
-      <div class="rmc-tags">
-        <span class="rmc-tag" style="border-color: var(--accent)">${recipe.language_name || 'Unknown'}</span>
-        ${tagsHtml}
+      <div class="rmc-tags-wrapper">
+        <div class="rmc-tags">
+          ${tagsHtml}
+        </div>
       </div>
     `;
     
     // Store recipe data on the card element for tap handling
     card.recipeData = recipe;
-    
-    setupCardInteractions(card, index);
+    card.addEventListener('click', () => handleCardTap(recipe));
     
     cards.push(card);
-    recipeGrid.appendChild(card);
-  });
-  
-  updateStack();
-}
-
-function updateStack() {
-  cards.forEach((card, index) => {
-    // Restore transition when not actively dragging
-    card.style.transition = 'transform 0.4s var(--ease-spring), opacity 0.4s var(--ease-out)';
-    
-    if (index < currentCardIndex) {
-      // Previous cards (swiped away to the left)
-      card.style.transform = 'translateX(-120%) rotate(-15deg)';
-      card.style.opacity = '0';
-      card.style.zIndex = '0';
-      card.style.pointerEvents = 'none';
-    } else if (index === currentCardIndex) {
-      // Active top card
-      card.style.transform = 'translateX(0) scale(1) translateY(0) rotate(0deg)';
-      card.style.opacity = '1';
-      card.style.zIndex = '10';
-      card.style.pointerEvents = 'auto';
-    } else {
-      // Next cards (stacked below)
-      const offset = index - currentCardIndex;
-      // Cap visual stacking to 3 cards max for performance & looks
-      if (offset > 3) {
-        card.style.opacity = '0';
-        card.style.pointerEvents = 'none';
-        return;
-      }
-      card.style.transform = `translateY(${offset * 15}px) scale(${1 - offset * 0.04})`;
-      card.style.opacity = `${1 - offset * 0.2}`;
-      card.style.zIndex = `${10 - offset}`;
-      card.style.pointerEvents = 'none';
-    }
+    recipeCarousel.appendChild(card);
   });
 }
 
-function setupCardInteractions(card, index) {
-  let isDragging = false;
-  let startX = 0;
-  let startY = 0;
-  let currentX = 0;
-  let currentY = 0;
-
-  card.addEventListener('pointerdown', (e) => {
-    // Only the top card is draggable
-    if (index !== currentCardIndex) return;
-    
-    isDragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    
-    // Remove transition for instant drag feedback
-    card.style.transition = 'none';
-    card.setPointerCapture(e.pointerId);
-  });
-
-  card.addEventListener('pointermove', (e) => {
-    if (!isDragging) return;
-    
-    currentX = e.clientX - startX;
-    currentY = e.clientY - startY;
-    
-    const rotate = currentX * 0.05;
-    card.style.transform = `translateX(${currentX}px) translateY(${currentY}px) rotate(${rotate}deg)`;
-  });
-
-  const handlePointerUp = (e) => {
-    if (!isDragging) return;
-    isDragging = false;
-    card.releasePointerCapture(e.pointerId);
-    
-    const threshold = 100; // px
-    
-    // Check if tapped (moved very little)
-    if (Math.abs(currentX) < 5 && Math.abs(currentY) < 5) {
-      handleCardTap(card.recipeData);
-    } 
-    // Swipe Left -> Next
-    else if (currentX < -threshold && currentCardIndex < cards.length - 1) {
-      currentCardIndex++;
-    }
-    // Swipe Right -> Previous
-    else if (currentX > threshold && currentCardIndex > 0) {
-      currentCardIndex--;
-    }
-    // Snap back
-    
-    currentX = 0;
-    currentY = 0;
-    updateStack();
-  };
-
-  card.addEventListener('pointerup', handlePointerUp);
-  card.addEventListener('pointercancel', handlePointerUp);
-}
+// Carousel scroll listener to update progress indicator
+recipeCarousel.addEventListener('scroll', () => {
+  if (totalRecipes === 0) return;
+  const cardWidth = recipeCarousel.clientWidth * 0.85; // matches 85% flex-basis
+  const scrollLeft = recipeCarousel.scrollLeft;
+  let currentIndex = Math.round(scrollLeft / cardWidth);
+  currentIndex = Math.max(0, Math.min(currentIndex, totalRecipes - 1));
+  carouselProgress.textContent = `${currentIndex + 1} / ${totalRecipes}`;
+});
 
 function handleCardTap(recipe) {
   currentRecipe = {
