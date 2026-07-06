@@ -171,14 +171,16 @@ function handleMicClick() {
 
 
 // ============================================================
-// Database & Library Logic
+// Database & Library Logic (Tinder Swipe)
 // ============================================================
+let cards = [];
+let currentCardIndex = 0;
 
 libraryBtn.addEventListener('click', async () => {
   setState('processing');
   stepTranscribeLabel.textContent = 'Fetching library...';
-  stepTranscribe.classList.add('processing-step--active');
-  stepStructure.classList.remove('processing-step--active', 'processing-step--complete');
+  stepTranscribe.classList.add('active');
+  stepStructure.classList.remove('active', 'done');
   
   try {
     const recipes = await fetchRecipes();
@@ -195,13 +197,15 @@ backToRecordBtn.addEventListener('click', () => {
 
 function renderDatabase(recipes) {
   recipeGrid.innerHTML = '';
+  cards = [];
+  currentCardIndex = 0;
   
   if (!recipes || recipes.length === 0) {
-    recipeGrid.innerHTML = '<p style="color:var(--text-secondary)">No recipes found yet.</p>';
+    recipeGrid.innerHTML = '<p style="color:var(--text-secondary); text-align:center;">No recipes found yet.</p>';
     return;
   }
   
-  recipes.forEach(recipe => {
+  recipes.forEach((recipe, index) => {
     const card = document.createElement('div');
     card.className = 'recipe-mini-card';
     
@@ -214,39 +218,138 @@ function renderDatabase(recipes) {
         <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
       </div>
       <div class="rmc-tags">
-        <span class="rmc-tag" style="border-color: var(--primary)">${recipe.language_name || 'Unknown'}</span>
+        <span class="rmc-tag" style="border-color: var(--accent)">${recipe.language_name || 'Unknown'}</span>
         ${tagsHtml}
       </div>
     `;
     
-    card.addEventListener('click', () => {
-      // Map DB schema back to frontend expected structure
-      currentRecipe = {
-        title: recipe.title,
-        prepTime: recipe.prep_time,
-        servings: recipe.servings,
-        ingredients: recipe.ingredients,
-        steps: recipe.steps,
-        languageName: recipe.language_name
-      };
-      
-      // Render recipe
-      renderRecipe(currentRecipe);
-      
-      // Handle Audio
-      if (recipe.audio_url) {
-        recipeAudio.src = recipe.audio_url;
-        audioPlayerContainer.style.display = 'block';
-      } else {
-        recipeAudio.src = '';
-        audioPlayerContainer.style.display = 'none';
-      }
-      
-      setState('result');
-    });
+    // Store recipe data on the card element for tap handling
+    card.recipeData = recipe;
     
+    setupCardInteractions(card, index);
+    
+    cards.push(card);
     recipeGrid.appendChild(card);
   });
+  
+  updateStack();
+}
+
+function updateStack() {
+  cards.forEach((card, index) => {
+    // Restore transition when not actively dragging
+    card.style.transition = 'transform 0.4s var(--ease-spring), opacity 0.4s var(--ease-out)';
+    
+    if (index < currentCardIndex) {
+      // Previous cards (swiped away to the left)
+      card.style.transform = 'translateX(-120%) rotate(-15deg)';
+      card.style.opacity = '0';
+      card.style.zIndex = '0';
+      card.style.pointerEvents = 'none';
+    } else if (index === currentCardIndex) {
+      // Active top card
+      card.style.transform = 'translateX(0) scale(1) translateY(0) rotate(0deg)';
+      card.style.opacity = '1';
+      card.style.zIndex = '10';
+      card.style.pointerEvents = 'auto';
+    } else {
+      // Next cards (stacked below)
+      const offset = index - currentCardIndex;
+      // Cap visual stacking to 3 cards max for performance & looks
+      if (offset > 3) {
+        card.style.opacity = '0';
+        card.style.pointerEvents = 'none';
+        return;
+      }
+      card.style.transform = `translateY(${offset * 15}px) scale(${1 - offset * 0.04})`;
+      card.style.opacity = `${1 - offset * 0.2}`;
+      card.style.zIndex = `${10 - offset}`;
+      card.style.pointerEvents = 'none';
+    }
+  });
+}
+
+function setupCardInteractions(card, index) {
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let currentX = 0;
+  let currentY = 0;
+
+  card.addEventListener('pointerdown', (e) => {
+    // Only the top card is draggable
+    if (index !== currentCardIndex) return;
+    
+    isDragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    
+    // Remove transition for instant drag feedback
+    card.style.transition = 'none';
+    card.setPointerCapture(e.pointerId);
+  });
+
+  card.addEventListener('pointermove', (e) => {
+    if (!isDragging) return;
+    
+    currentX = e.clientX - startX;
+    currentY = e.clientY - startY;
+    
+    const rotate = currentX * 0.05;
+    card.style.transform = `translateX(${currentX}px) translateY(${currentY}px) rotate(${rotate}deg)`;
+  });
+
+  const handlePointerUp = (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    card.releasePointerCapture(e.pointerId);
+    
+    const threshold = 100; // px
+    
+    // Check if tapped (moved very little)
+    if (Math.abs(currentX) < 5 && Math.abs(currentY) < 5) {
+      handleCardTap(card.recipeData);
+    } 
+    // Swipe Left -> Next
+    else if (currentX < -threshold && currentCardIndex < cards.length - 1) {
+      currentCardIndex++;
+    }
+    // Swipe Right -> Previous
+    else if (currentX > threshold && currentCardIndex > 0) {
+      currentCardIndex--;
+    }
+    // Snap back
+    
+    currentX = 0;
+    currentY = 0;
+    updateStack();
+  };
+
+  card.addEventListener('pointerup', handlePointerUp);
+  card.addEventListener('pointercancel', handlePointerUp);
+}
+
+function handleCardTap(recipe) {
+  currentRecipe = {
+    title: recipe.title,
+    prepTime: recipe.prep_time,
+    servings: recipe.servings,
+    ingredients: recipe.ingredients,
+    steps: recipe.steps,
+    languageName: recipe.language_name
+  };
+  
+  renderRecipe(currentRecipe);
+  
+  if (recipe.audio_url) {
+    recipeAudio.src = recipe.audio_url;
+    audioPlayerContainer.style.display = 'block';
+  } else {
+    recipeAudio.src = '';
+    audioPlayerContainer.style.display = 'none';
+  }
+  
+  setState('result');
 }
 
 

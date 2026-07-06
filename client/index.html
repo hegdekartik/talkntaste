@@ -24,15 +24,9 @@
 
     <!-- ===== HEADER ===== -->
     <header class="header">
-      <div class="header__brand">
+      <div class="header__brand" style="margin: 0 auto;">
         <span class="header__icon">🍳</span>
         <h1 class="header__title">TalknTaste</h1>
-      </div>
-      <div class="header__actions">
-        <button id="library-btn" class="library-btn" aria-label="View Recipe Library">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-          <span>Library</span>
-        </button>
       </div>
     </header>
     <p class="header__tagline" style="text-align:center; margin-bottom: 2rem; color: var(--text-secondary); padding: 0 1rem;">Speak your recipe in any Indian language. Get a clean, shareable recipe card.</p>
@@ -85,6 +79,11 @@
           <input id="audio-upload" type="file" accept="audio/*,.mp3,.wav,.webm,.m4a,.ogg,.flac" hidden>
         </label>
       </div>
+      
+      <!-- FAB Library Button -->
+      <button id="library-btn" class="fab-library-btn" aria-label="View Recipe Library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      </button>
     </section>
 
     <!-- ===== PROCESSING VIEW ===== -->
@@ -121,7 +120,7 @@
         <h2>Recent Recipes</h2>
         <button id="back-to-record-btn" class="back-btn">← Back to recording</button>
       </div>
-      <div id="recipe-grid" class="recipe-grid">
+      <div id="recipe-grid" class="card-stack-container">
         <!-- Cards injected here -->
       </div>
     </section>
