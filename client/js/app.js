@@ -21,7 +21,8 @@ const waveformCanvas = document.getElementById('waveform-canvas');
 const audioUploadInput = document.getElementById('audio-upload');
 const durationTip = document.getElementById('duration-tip');
 const durationTipClose = document.getElementById('duration-tip-close');
-const libraryBtn = document.getElementById('library-btn');
+const navRecordBtn = document.getElementById('nav-record-btn');
+const navLibraryBtn = document.getElementById('nav-library-btn');
 
 // Database view
 const backToRecordBtn = document.getElementById('back-to-record-btn');
@@ -80,6 +81,16 @@ let isEditing = false;
 function setState(newState) {
   currentState = newState;
   
+  if (navRecordBtn && navLibraryBtn) {
+    if (newState === 'database') {
+      navRecordBtn.classList.remove('active');
+      navLibraryBtn.classList.add('active');
+    } else {
+      navRecordBtn.classList.add('active');
+      navLibraryBtn.classList.remove('active');
+    }
+  }
+
   if (!document.startViewTransition) {
     app.setAttribute('data-state', newState);
     routeFocus(newState);
@@ -178,7 +189,8 @@ function handleMicClick() {
 let cards = [];
 let totalRecipes = 0;
 
-libraryBtn.addEventListener('click', async () => {
+navLibraryBtn.addEventListener('click', async () => {
+  if (currentState === 'database') return;
   setState('processing');
   stepTranscribeLabel.textContent = 'Fetching library...';
   stepTranscribe.classList.add('active');
@@ -190,6 +202,15 @@ libraryBtn.addEventListener('click', async () => {
     setState('database');
   } catch (error) {
     showError(error.message || 'Failed to load recipes');
+  }
+});
+
+navRecordBtn.addEventListener('click', () => {
+  if (currentState === 'idle') return;
+  if (currentState !== 'database') {
+    resetApp();
+  } else {
+    setState('idle');
   }
 });
 
@@ -236,15 +257,17 @@ function renderDatabase(recipes) {
     card.innerHTML = `
       <div class="rmc-header">
         <img src="${staticImageUrl}" alt="Food" class="rmc-image" />
+      </div>
+      <div class="rmc-content">
         <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
-      </div>
-      <div class="rmc-meta">
-        <span class="rmc-meta-item">⏱️ ${recipe.prep_time || '--'}</span>
-        <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
-      </div>
-      <div class="rmc-tags-wrapper">
-        <div class="rmc-tags">
-          ${tagsHtml}
+        <div class="rmc-meta">
+          <span class="rmc-meta-item">⏱️ ${recipe.prep_time || '--'}</span>
+          <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
+        </div>
+        <div class="rmc-tags-wrapper">
+          <div class="rmc-tags">
+            ${tagsHtml}
+          </div>
         </div>
       </div>
     `;

@@ -28,9 +28,6 @@
         <span class="header__icon">🍳</span>
         <h1 class="header__title">TalknTaste</h1>
       </div>
-      <button id="library-btn" class="header__library-btn" aria-label="Explore Recipes">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
-      </button>
     </header>
     <p class="header__tagline" style="text-align:center; margin-bottom: 2rem; color: var(--text-secondary); padding: 0 1rem;">Speak your recipe in any Indian language. Get a clean, shareable recipe card.</p>
 
@@ -235,6 +232,18 @@
     <div id="toast" class="toast" role="alert" aria-live="polite">
       <span id="toast-message"></span>
     </div>
+
+    <!-- ===== BOTTOM NAV ===== -->
+    <nav class="bottom-nav">
+      <button id="nav-record-btn" class="bottom-nav__item active" aria-label="Record Recipe">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span>Record</span>
+      </button>
+      <button id="nav-library-btn" class="bottom-nav__item" aria-label="Recipe Library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Library</span>
+      </button>
+    </nav>
 
   </div>
 
