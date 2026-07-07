@@ -6,48 +6,44 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 
 ## ✨ Features
 
-- **🎙️ Voice Recording** — Tap the mic, speak your recipe (up to 3 minutes), and watch the waveform dance
-- **📁 File Upload** — Drag-and-drop or upload pre-recorded `.mp3`, `.wav`, `.webm` files
-- **🗣️ Indian Language Support** — Kannada, Hindi, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, English, and more
-- **🔤 Language Preservation** — Your recipe stays in the language you spoke it in — no forced English translation
-- **📝 Structured Output** — AI extracts title, servings, prep time, ingredients (with quantities & notes), and numbered steps
-- **✏️ Inline Editing** — Tap to edit any field — title, ingredients, steps — directly on the recipe card
-- **📱 WhatsApp Sharing** — One-tap share with emoji-rich formatting that looks beautiful in chat
-- **🐦 Twitter/X Sharing** — Auto-condensed format with hashtags
-- **📋 Clipboard Copy** — Formatted recipe text copied with a single tap
-- **🌙 Dark Theme** — Warm saffron accent on deep charcoal, designed for readability
+- **🎙️ Voice Recording** — Tap the mic, speak your recipe (up to 3 minutes), and watch the waveform dance.
+- **📁 File Upload** — Upload pre-recorded `.mp3`, `.wav`, `.webm` files.
+- **🗣️ Indian Language Support** — Kannada, Hindi, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, English, and more.
+- **🔤 Language Preservation** — Your recipe stays in the language you spoke it in.
+- **📝 Structured Output** — AI extracts title, servings, prep time, ingredients, and numbered steps.
+- **✏️ Inline Editing** — Tap to edit any field directly on the recipe card.
+- **📱 Sharing** — One-tap share with emoji-rich formatting for WhatsApp or Twitter.
+- **📚 Recipe Library** — Automatically saves your structured recipes to a database with a beautiful vibrant, block-based UI.
+- **🧭 Bottom Navigation** — Intuitive mobile-first tab bar to seamlessly switch between Recording and your Library.
 
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
 | **Frontend** | Vanilla JS + Vite |
-| **Backend** | Node.js + Express (Local) / Vercel Serverless Functions (Prod) |
+| **Backend** | Vercel Serverless Functions (`/api/*`) |
+| **Database & Storage** | [Supabase](https://supabase.com) (PostgreSQL + Blob Storage) |
 | **Speech-to-Text** | [Sarvam AI](https://sarvam.ai) (Saaras v3) |
 | **Recipe Structuring** | OpenAI GPT-4o-mini (Structured Outputs) |
 | **Audio Recording** | Web MediaRecorder API |
-| **Sharing** | Web Share API + WhatsApp/Twitter deeplinks |
 
 ## 📦 Project Structure
 
-```
+```text
 talkntaste/
-├── api/                  # Vercel Serverless Functions (Production API)
-│   ├── _lib/             # Shared utilities (parseMultipart, sarvam, openai)
-│   ├── process.js        # POST /api/process
-│   └── ...
-├── server/               # Express API server (Local development)
-│   ├── index.js
+├── api/                  # Vercel Serverless Functions (Production & Local API)
+│   ├── _lib/             # Shared utilities (supabase, sarvam, openai, parseMultipart)
+│   ├── process.js        # POST /api/process (Audio processing pipeline)
 │   └── ...
 ├── client/               # Vite frontend SPA
-│   ├── index.html
-│   ├── style.css
+│   ├── index.html        # Main entry point with bottom navigation
+│   ├── style.css         # Vibrant Block-based UI design system
 │   ├── js/
+│   │   ├── app.js        # Core state machine & UI controller
+│   │   ├── api.js        # API communication logic
 │   │   └── ...
-│   └── ...
 ├── vercel.json           # Vercel deployment configuration
 ├── .env.example
-├── .gitignore
 └── package.json
 ```
 
@@ -56,8 +52,9 @@ talkntaste/
 ### Prerequisites
 
 - [Node.js](https://nodejs.org) v18+
-- [Sarvam AI API key](https://docs.sarvam.ai) (free ₹1,000 credits on signup)
+- [Sarvam AI API key](https://docs.sarvam.ai)
 - [OpenAI API key](https://platform.openai.com/api-keys)
+- [Supabase Project](https://supabase.com) (URL and Anon Key)
 
 ### Setup
 
@@ -66,25 +63,25 @@ talkntaste/
 git clone https://github.com/hegdekartik/talkntaste.git
 cd talkntaste
 
-# Install dependencies
+# Install dependencies (from the root, runs for both root and client)
 npm install
-cd server && npm install && cd ..
 cd client && npm install && cd ..
 
 # Configure API keys
-cp .env.example server/.env
-# Edit server/.env with your actual keys
+cp .env.example .env
+# Edit .env with your actual keys for Sarvam, OpenAI, and Supabase
 ```
 
 ### Run Locally
+
+Use Vercel CLI to run both the frontend and serverless functions locally:
 
 ```bash
 npm run dev
 ```
 
-This starts both servers concurrently:
-- **Frontend**: http://localhost:5173
-- **Backend (Express)**: http://localhost:3001
+This starts:
+- **Frontend & API**: `http://localhost:3000` (Vercel dev server automatically proxies `/api` to the serverless functions).
 
 ### Deploy to Vercel
 
@@ -93,70 +90,19 @@ The project is fully configured to deploy to Vercel as a single app.
 1. **Push** this repository to GitHub.
 2. **Import** the project into Vercel.
 3. Set the **Framework Preset** to **Vite**.
-4. Add your **Environment Variables** (`SARVAM_API_KEY`, `OPENAI_API_KEY`) in the Vercel dashboard.
+4. Add your **Environment Variables** (`SARVAM_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`) in the Vercel dashboard.
 5. **Deploy**. Vercel will build the frontend and deploy the `api/` folder as serverless functions.
-
-### Test on Mobile
-
-Use the Network URL shown by Vite (e.g., `http://192.168.x.x:5173`) to test on your phone — same Wi-Fi required.
 
 ## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/process` | Full pipeline: audio → transcript → structured recipe |
-| `POST` | `/api/transcribe` | Audio → raw transcript only |
-| `POST` | `/api/structure` | Transcript text → structured recipe JSON |
-| `GET` | `/api/health` | Health check |
-
-### Recipe JSON Schema
-
-```json
-{
-  "title": "ಬಿಸಿಬೇಳೆ ಬಾತ್",
-  "language": "kn",
-  "languageName": "Kannada",
-  "servings": 4,
-  "prepTime": "45 ನಿಮಿಷ",
-  "ingredients": [
-    { "name": "ತೊಗರಿ ಬೇಳೆ", "quantity": "1 ಕಪ್", "notes": "ತೊಳೆದು" }
-  ],
-  "steps": [
-    { "stepNumber": 1, "instruction": "ತೊಗರಿ ಬೇಳೆ ಮತ್ತು ಅಕ್ಕಿಯನ್ನು ಕುಕ್ಕರ್‌ನಲ್ಲಿ ಬೇಯಿಸಿ" }
-  ]
-}
-```
-
-## 💰 Cost
-
-| Service | Cost |
-|---------|------|
-| Sarvam AI | ₹30/hr of audio (free ₹1,000 credits) |
-| OpenAI GPT-4o-mini | ~$0.001 per recipe |
-| **Total for prototype** | **Effectively $0** |
-
-## 📱 Share Format Preview
-
-**WhatsApp:**
-```
-🍳 *ಬಿಸಿಬೇಳೆ ಬಾತ್*
-⏱️ 45 ನಿಮಿಷ · 👥 4
-
-📝 *ಪದಾರ್ಥಗಳು*
-▸ 1 ಕಪ್ ತೊಗರಿ ಬೇಳೆ (ತೊಳೆದು)
-▸ 1 ಕಪ್ ಅಕ್ಕಿ
-
-👨‍🍳 *ವಿಧಾನ*
-1️⃣ ಕುಕ್ಕರ್‌ನಲ್ಲಿ ಬೇಯಿಸಿ
-2️⃣ ಒಗ್ಗರಣೆ ಮಾಡಿ
-
-✨ Made with TalknTaste
-```
+| `POST` | `/api/upload-url` | Generates a signed Supabase URL for direct client audio uploads |
+| `POST` | `/api/process` | Handles audio processing, triggers Sarvam AI transcription |
+| `POST` | `/api/poll` | Polls Sarvam AI for long-audio batch transcription results |
+| `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes via OpenAI |
+| `POST` | `/api/save` | Saves the structured recipe to Supabase PostgreSQL |
+| `GET`  | `/api/recipes` | Fetches the user's recipe library from Supabase |
 
 ## 📄 License
-
 MIT
-
----
-
-Built with ❤️ for Indian home cooks everywhere.
