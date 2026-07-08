@@ -5,13 +5,22 @@
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 /**
+ * Ping the server to wake it up (prevents cold starts).
+ */
+export function wakeUpBackend() {
+  fetch(`${API_BASE}/health`)
+    .catch(err => console.debug('[API] Wakeup ping failed', err));
+}
+
+/**
  * Process audio through the full pipeline (transcribe + structure).
  *
  * @param {Blob} audioBlob - Audio data blob
  * @param {{ onTranscribing?: () => void, onStructuring?: () => void }} callbacks
+ * @param {string|null} authorName - Optional author name
  * @returns {Promise<{ transcript: string, detectedLanguage: string, recipe: object }>}
  */
-export async function processAudio(audioBlob, callbacks = {}) {
+export async function processAudio(audioBlob, callbacks = {}, authorName = null) {
   const formData = new FormData();
   const ext = getExtension(audioBlob.type);
   formData.append('audio', audioBlob, `recording.${ext}`);
@@ -101,7 +110,7 @@ export async function processAudio(audioBlob, callbacks = {}) {
   fetch(`${API_BASE}/save`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipe, transcript, language: detectedLanguage, audioPath, originalName }),
+    body: JSON.stringify({ recipe, transcript, language: detectedLanguage, audioPath, originalName, authorName }),
   }).catch(err => console.error('[API] Failed to save recipe to database:', err));
 
   return {

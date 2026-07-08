@@ -198,9 +198,10 @@ export async function downloadAudio(storagePath) {
  * @param {string} [params.audioFilePath] - Path to audio file on disk (for upload)
  * @param {string} [params.audioPath] - Existing storage path (if already uploaded)
  * @param {string} [params.originalName] - Original audio filename
+ * @param {string} [params.authorName] - Optional author name
  * @returns {Promise<string|null>} Recipe UUID or null on failure
  */
-export async function saveRecipe({ recipe, transcript, language, audioFilePath, audioPath, originalName }) {
+export async function saveRecipe({ recipe, transcript, language, audioFilePath, audioPath, originalName, authorName }) {
   const sb = getSupabase();
   if (!sb) {
     console.warn('[Supabase] Client not initialized — skipping save');
@@ -238,6 +239,7 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
         transcript: transcript || null,
         tags,
         audio_path: finalAudioPath || null,
+        author_name: authorName || null,
       })
       .select('id')
       .single();
@@ -267,7 +269,7 @@ export async function getRecipes() {
 
   const { data, error } = await sb
     .from('recipes')
-    .select('id, title, language, language_name, prep_time, servings, ingredients, steps, tags, audio_path, created_at')
+    .select('id, title, language, language_name, prep_time, servings, ingredients, steps, tags, audio_path, author_name, created_at')
     .order('created_at', { ascending: false })
     .limit(50);
 

@@ -5,13 +5,17 @@
  */
 
 import { AudioRecorder, formatTime } from './recorder.js';
-import { processAudio, fetchRecipes } from './api.js';
+import { processAudio, fetchRecipes, wakeUpBackend } from './api.js';
 import { shareWhatsApp, shareTwitter, copyToClipboard } from './share.js';
+
+// Wake up backend immediately to avoid cold start delays
+wakeUpBackend();
 
 // ============================================================
 // DOM References
 // ============================================================
 const app = document.getElementById('app');
+const chefNameInput = document.getElementById('chef-name-input');
 
 // Input view
 const micBtn = document.getElementById('mic-btn');
@@ -67,8 +71,17 @@ const toastMessage = document.getElementById('toast-message');
 
 
 // ============================================================
-// State
+// Initialize
 // ============================================================
+const savedChefName = localStorage.getItem('talkntaste_chef_name');
+if (savedChefName) {
+  chefNameInput.value = savedChefName;
+}
+
+chefNameInput.addEventListener('change', (e) => {
+  localStorage.setItem('talkntaste_chef_name', e.target.value.trim());
+});
+
 let currentState = 'idle';
 let recorder = null;
 let currentRecipe = null;
@@ -248,8 +261,11 @@ function renderDatabase(recipes) {
     
     let tagsHtml = visibleTags.map(tag => `<span class="rmc-tag">${tag}</span>`).join('');
     if (hiddenCount > 0) {
-      tagsHtml += `<span class="rmc-tag">+${hiddenCount} more</span>`;
+      tagsHtml += `<span class="rmc-tag">+${hiddenCount}</span>`;
     }
+
+    const hasAudio = !!(recipe.audio_url || recipe.audio_path);
+    const authorStr = recipe.author_name ? `<p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">By ${recipe.author_name}</p>` : '';
     
     // Use a static food image for all recipes
     const staticImageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
@@ -260,9 +276,11 @@ function renderDatabase(recipes) {
       </div>
       <div class="rmc-content">
         <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
+        ${authorStr}
         <div class="rmc-meta">
           <span class="rmc-meta-item">⏱️ ${recipe.prep_time || '--'}</span>
           <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
+          ${hasAudio ? '<span title="Has Audio">🎙️</span>' : ''}
         </div>
         <div class="rmc-tags-wrapper">
           <div class="rmc-tags">
@@ -367,6 +385,11 @@ async function processRecording(audioBlob, knownDuration = null) {
   try {
     // Activate first step indicator
     stepTranscribe.classList.add('active');
+    
+    // Save chef name if modified just before recording
+    const authorName = chefNameInput.value.trim() || `Chef-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    localStorage.setItem('talkntaste_chef_name', authorName);
+    if (!chefNameInput.value) chefNameInput.value = authorName;
 
     const result = await processAudio(audioBlob, {
       onTranscribing: () => {
@@ -377,7 +400,7 @@ async function processRecording(audioBlob, knownDuration = null) {
         stepTranscribe.classList.add('done');
         stepStructure.classList.add('active');
       },
-    });
+    }, authorName);
 
     // Show transcript preview
     if (result.transcript) {
