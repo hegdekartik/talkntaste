@@ -386,8 +386,8 @@ async function processRecording(audioBlob, knownDuration = null) {
     // Activate first step indicator
     stepTranscribe.classList.add('active');
     
-    // Save chef name if modified just before recording
-    const authorName = chefNameInput.value.trim() || `Chef-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    // Save user name if modified just before recording
+    const authorName = chefNameInput.value.trim() || `User-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
     localStorage.setItem('talkntaste_chef_name', authorName);
     if (!chefNameInput.value) chefNameInput.value = authorName;
 
