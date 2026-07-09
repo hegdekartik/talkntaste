@@ -15,7 +15,7 @@ wakeUpBackend();
 // DOM References
 // ============================================================
 const app = document.getElementById('app');
-const chefNameInput = document.getElementById('chef-name-input');
+const usernameInput = document.getElementById('username-input');
 
 // Input view
 const micBtn = document.getElementById('mic-btn');
@@ -32,6 +32,7 @@ const navLibraryBtn = document.getElementById('nav-library-btn');
 const backToRecordBtn = document.getElementById('back-to-record-btn');
 const recipeCarousel = document.getElementById('recipe-carousel');
 const carouselProgress = document.getElementById('carousel-progress');
+const filterChipsContainer = document.getElementById('filter-chips');
 
 // Processing view
 const stepTranscribe = document.getElementById('step-transcribe');
@@ -43,6 +44,7 @@ const transcriptText = document.getElementById('transcript-text');
 // Result view
 const languageName = document.getElementById('language-name');
 const recipeTitle = document.getElementById('recipe-title');
+const recipeAuthor = document.getElementById('recipe-author');
 const recipePrepTime = document.getElementById('recipe-prep-time');
 const recipeServings = document.getElementById('recipe-servings');
 const ingredientsList = document.getElementById('ingredients-list');
@@ -73,13 +75,13 @@ const toastMessage = document.getElementById('toast-message');
 // ============================================================
 // Initialize
 // ============================================================
-const savedChefName = localStorage.getItem('talkntaste_chef_name');
-if (savedChefName) {
-  chefNameInput.value = savedChefName;
+const savedUsername = localStorage.getItem('talkntaste_username');
+if (savedUsername) {
+  usernameInput.value = savedUsername;
 }
 
-chefNameInput.addEventListener('change', (e) => {
-  localStorage.setItem('talkntaste_chef_name', e.target.value.trim());
+usernameInput.addEventListener('change', (e) => {
+  localStorage.setItem('talkntaste_username', e.target.value.trim());
 });
 
 let currentState = 'idle';
@@ -231,23 +233,25 @@ backToRecordBtn.addEventListener('click', () => {
   setState('idle');
 });
 
+let currentDatabaseRecipes = [];
+let activeFilter = 'All';
+
 function renderDatabase(recipes) {
-  recipeCarousel.innerHTML = '';
-  cards = [];
+  currentDatabaseRecipes = recipes;
+  activeFilter = 'All';
   
   if (!recipes || recipes.length === 0) {
+    if (filterChipsContainer) filterChipsContainer.innerHTML = '';
     recipeCarousel.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 2rem;">No recipes found yet.</p>';
+    if (carouselProgress) carouselProgress.textContent = '';
     return;
   }
   
-  recipes.forEach((recipe, index) => {
-    const card = document.createElement('div');
-    card.className = 'recipe-mini-card';
-    card.tabIndex = 0;
-    
-    // Deduplicate tags and handle "+X more" logic
-    let rawTags = recipe.tags || [];
-    let lang = recipe.language_name || 'Unknown';
+  // Extract all unique tags
+  const tagCounts = {};
+  recipes.forEach(r => {
+    let rawTags = r.tags || [];
+    let lang = r.language_name || 'Unknown';
     let uniqueTags = [lang];
     
     rawTags.forEach(tag => {
@@ -256,16 +260,100 @@ function renderDatabase(recipes) {
       }
     });
     
+    r._normalizedTags = uniqueTags; 
+    
+    uniqueTags.forEach(tag => {
+      tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+    });
+  });
+
+  // Sort tags by frequency
+  const sortedTags = Object.entries(tagCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(entry => entry[0]);
+
+  // Render chips
+  if (filterChipsContainer) {
+    filterChipsContainer.innerHTML = '';
+    
+    const allBtn = document.createElement('button');
+    allBtn.className = 'filter-chip active';
+    allBtn.textContent = 'All';
+    allBtn.addEventListener('click', () => applyFilter('All', allBtn));
+    filterChipsContainer.appendChild(allBtn);
+    
+    // Top 10 tags
+    sortedTags.slice(0, 10).forEach(tag => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-chip';
+      // Title case the tag for display
+      const displayName = tag.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      btn.textContent = displayName;
+      btn.addEventListener('click', () => applyFilter(tag, btn));
+      filterChipsContainer.appendChild(btn);
+    });
+  }
+  
+  applyFilter('All', filterChipsContainer ? filterChipsContainer.firstChild : null);
+}
+
+function applyFilter(filterTag, activeBtn) {
+  activeFilter = filterTag;
+  
+  if (filterChipsContainer) {
+    // Update active class on chips
+    Array.from(filterChipsContainer.children).forEach(btn => btn.classList.remove('active'));
+    if (activeBtn) activeBtn.classList.add('active');
+  }
+  
+  // Filter recipes
+  let filteredRecipes = currentDatabaseRecipes;
+  if (filterTag !== 'All') {
+    filteredRecipes = currentDatabaseRecipes.filter(r => 
+      r._normalizedTags && r._normalizedTags.some(t => t.toLowerCase() === filterTag.toLowerCase())
+    );
+  }
+  
+  renderFilteredCards(filteredRecipes);
+}
+
+function renderFilteredCards(recipes) {
+  recipeCarousel.innerHTML = '';
+  cards = [];
+  
+  if (!recipes || recipes.length === 0) {
+    recipeCarousel.innerHTML = '<p style="color:var(--text-secondary); text-align:center; padding: 2rem;">No recipes found for this filter.</p>';
+    if (carouselProgress) carouselProgress.textContent = '';
+    return;
+  }
+  
+  totalRecipes = recipes.length;
+  if (carouselProgress) carouselProgress.textContent = `1 / ${totalRecipes}`;
+  recipeCarousel.scrollLeft = 0;
+  
+  recipes.forEach((recipe, index) => {
+    const card = document.createElement('div');
+    card.className = 'recipe-mini-card';
+    card.tabIndex = 0;
+    
+    const uniqueTags = recipe._normalizedTags || [];
     const visibleTags = uniqueTags.slice(0, 3);
     const hiddenCount = uniqueTags.length - visibleTags.length;
     
-    let tagsHtml = visibleTags.map(tag => `<span class="rmc-tag">${tag}</span>`).join('');
+    let tagsHtml = visibleTags.map(tag => {
+      const displayTag = tag.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      return `<span class="rmc-tag">${displayTag}</span>`;
+    }).join('');
+    
     if (hiddenCount > 0) {
       tagsHtml += `<span class="rmc-tag">+${hiddenCount}</span>`;
     }
 
     const hasAudio = !!(recipe.audio_url || recipe.audio_path);
-    const authorStr = recipe.author_name ? `<p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">By ${recipe.author_name}</p>` : '';
+    let authorStr = '';
+    if (recipe.author_name && !recipe.author_name.startsWith('Anon-')) {
+      authorStr = `<p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">By ${recipe.author_name}</p>`;
+    }
     
     // Use a static food image for all recipes
     const staticImageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
@@ -309,17 +397,20 @@ function handleCardTap(recipe) {
     ingredients: recipe.ingredients,
     steps: recipe.steps,
     languageName: recipe.language_name,
-    language: recipe.language
+    language: recipe.language,
+    authorName: recipe.author_name
   };
   
   renderRecipe(currentRecipe);
   
   if (recipe.audio_url) {
     recipeAudio.src = recipe.audio_url;
+    audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
+    document.getElementById('recipe-audio').src = recipe.audio_url;
     audioPlayerContainer.style.display = 'block';
   } else {
-    recipeAudio.src = '';
-    audioPlayerContainer.style.display = 'none';
+    audioPlayerContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 0.5rem 0;"><em>No audio available for this recipe</em></p>';
+    audioPlayerContainer.style.display = 'block';
   }
   
   setState('result');
@@ -387,9 +478,12 @@ async function processRecording(audioBlob, knownDuration = null) {
     stepTranscribe.classList.add('active');
     
     // Save user name if modified just before recording
-    const authorName = chefNameInput.value.trim() || `User-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-    localStorage.setItem('talkntaste_chef_name', authorName);
-    if (!chefNameInput.value) chefNameInput.value = authorName;
+    let authorName = usernameInput.value.trim();
+    if (!authorName) {
+      authorName = `Anon-${Math.floor(1000 + Math.random() * 9000)}`;
+    } else {
+      localStorage.setItem('talkntaste_username', authorName);
+    }
 
     const result = await processAudio(audioBlob, {
       onTranscribing: () => {
@@ -449,8 +543,16 @@ function renderRecipe(recipe) {
   // Language badge
   languageName.textContent = recipe.languageName || recipe.language || 'Detected';
 
-  // Title
+  // Title & Author
   recipeTitle.textContent = recipe.title;
+  
+  if (recipe.authorName && !recipe.authorName.startsWith('Anon-')) {
+    recipeAuthor.textContent = `By ${recipe.authorName}`;
+    recipeAuthor.classList.add('visible');
+  } else {
+    recipeAuthor.textContent = '';
+    recipeAuthor.classList.remove('visible');
+  }
 
   // Meta
   recipePrepTime.textContent = recipe.prepTime || '—';

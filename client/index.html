@@ -30,12 +30,13 @@
       </div>
     </header>
     <p class="header__tagline" style="text-align:center; margin-bottom: 1rem; color: var(--text-secondary); padding: 0 1rem;">Speak your recipe in any Indian language. Get a clean, shareable recipe card.</p>
-    <div style="text-align: center; margin-bottom: 2rem;">
-      <input type="text" id="chef-name-input" placeholder="Your Name (optional)" style="padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border-glass); background: var(--bg-card); color: var(--text-primary); font-family: var(--font-body); text-align: center; max-width: 200px; outline: none; transition: border-color 0.2s;" />
-    </div>
-
     <!-- ===== INPUT VIEW ===== -->
     <section id="input-view" class="view view--input">
+      <!-- Username Input -->
+      <div class="username-container">
+        <input type="text" id="username-input" class="username-input" placeholder="Enter your name (optional)" autocomplete="name">
+      </div>
+
       <div class="mic-area">
         <!-- Waveform canvas (behind the mic button) -->
         <canvas id="waveform-canvas" class="waveform-canvas" width="300" height="300"></canvas>
@@ -127,11 +128,7 @@
       </div>
       
       <!-- Filter Chips -->
-      <div class="filter-chips">
-        <button class="filter-chip active">All</button>
-        <button class="filter-chip">Breakfast</button>
-        <button class="filter-chip">Under 30m</button>
-        <button class="filter-chip">Vegetarian</button>
+      <div id="filter-chips" class="filter-chips">
       </div>
 
       <div class="carousel-container">
@@ -160,6 +157,7 @@
       <article id="recipe-card" class="recipe-card">
         <!-- Title -->
         <h2 id="recipe-title" class="recipe-card__title" contenteditable="false"></h2>
+        <div id="recipe-author" class="recipe-card__author"></div>
 
         <!-- Meta info -->
         <div class="recipe-card__meta">

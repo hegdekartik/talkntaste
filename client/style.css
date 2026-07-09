@@ -205,6 +205,37 @@ ul, ol {
 
 
 /* ---- Mic Area ---- */
+.username-container {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+  padding-top: var(--space-md);
+}
+
+.username-input {
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  text-align: center;
+  width: 100%;
+  max-width: 240px;
+  outline: none;
+  transition: all var(--duration-fast) var(--ease-out);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.username-input::placeholder {
+  color: var(--text-muted);
+}
+
+.username-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
 .mic-area {
   flex: 1;
   display: flex;
@@ -623,6 +654,18 @@ ul, ol {
 .recipe-card__title[contenteditable="true"]:focus {
   background: var(--bg-card-hover);
   box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.recipe-card__author {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+  font-weight: 500;
+  display: none;
+}
+
+.recipe-card__author.visible {
+  display: block;
 }
 
 
