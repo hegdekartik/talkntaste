@@ -70,8 +70,22 @@ const recipeSchema = {
         additionalProperties: false,
       },
     },
+    tags: {
+      type: 'array',
+      description: 'Select 3 to 5 tags from the allowed set that best describe this recipe.',
+      items: {
+        type: 'string',
+        enum: [
+          'vegetarian', 'non-vegetarian', 'vegan',
+          'south-indian', 'north-indian',
+          'snack', 'dessert', 'breakfast', 'lunch', 'dinner',
+          'quick', 'under-30-min', 'slow-cook',
+          'rice', 'bread', 'curry', 'chutney', 'pickle', 'beverage', 'salad'
+        ],
+      },
+    },
   },
-  required: ['title', 'language', 'languageName', 'servings', 'prepTime', 'ingredients', 'steps'],
+  required: ['title', 'language', 'languageName', 'servings', 'prepTime', 'ingredients', 'steps', 'tags'],
   additionalProperties: false,
 };
 
@@ -86,7 +100,8 @@ CRITICAL RULES:
 6. If the speaker doesn't mention servings or prep time, make a reasonable inference based on the dish type and standard household portions.
 7. Break instructions into clear, numbered steps. Each step should be a single distinct cooking action.
 8. Extract ALL ingredients mentioned, including foundational ones often rushed through (water, salt, cooking oil, ghee).
-9. Include preparation states in notes where mentioned (e.g., "ಸಣ್ಣಗೆ ಹೆಚ್ಚಿದ" (finely chopped), "ಹುರಿದ" (roasted), "soaked overnight").`;
+9. Include preparation states in notes where mentioned (e.g., "ಸಣ್ಣಗೆ ಹೆಚ್ಚಿದ" (finely chopped), "ಹುರಿದ" (roasted), "soaked overnight").
+10. TAGS: Select exactly 3 to 5 tags from this predefined set that best describe the recipe: vegetarian, non-vegetarian, vegan, south-indian, north-indian, snack, dessert, breakfast, lunch, dinner, quick, under-30-min, slow-cook, rice, bread, curry, chutney, pickle, beverage, salad. Do NOT invent new tags.`;
 
 /**
  * Structure a raw transcript into a recipe JSON using GPT-4o-mini.

@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { recipe, transcript, language, audioPath, originalName } = req.body;
+  const { recipe, transcript, language, audioPath, originalName, authorName } = req.body;
 
   if (!recipe || !transcript) {
     return res.status(400).json({ error: 'Missing required data' });
@@ -19,6 +19,7 @@ export default async function handler(req, res) {
       language,
       audioPath,
       originalName,
+      authorName,
     });
     res.status(200).json({ recipeId });
   } catch (error) {

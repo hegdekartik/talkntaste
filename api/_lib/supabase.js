@@ -215,8 +215,10 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
       finalAudioPath = await uploadAudio(audioFilePath, originalName);
     }
 
-    // Generate tags
-    const tags = generateTags(recipe, transcript);
+    // Prefer OpenAI-generated tags; fall back to heuristic if missing
+    const tags = (recipe.tags && recipe.tags.length > 0)
+      ? recipe.tags
+      : generateTags(recipe, transcript);
 
     // Validate servings — OpenAI might return a string instead of an integer
     let servings = recipe.servings;

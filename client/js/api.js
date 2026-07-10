@@ -106,17 +106,13 @@ export async function processAudio(audioBlob, callbacks = {}, authorName = null)
 
   const { recipe } = await structureResponse.json();
 
-  // Step 3: Save (fire-and-forget, but we await to get ID)
-  fetch(`${API_BASE}/save`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ recipe, transcript, language: detectedLanguage, audioPath, originalName, authorName }),
-  }).catch(err => console.error('[API] Failed to save recipe to database:', err));
-
+  // Don't auto-save — let the user review and explicitly Publish
   return {
     transcript,
     detectedLanguage,
     recipe,
+    audioPath: storagePath,
+    originalName: `recording.${ext}`,
   };
 }
 
@@ -211,6 +207,33 @@ export async function structureRecipe(transcript, language) {
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
     throw new Error(error.error || `Server returned ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Save a reviewed recipe to the database (called on explicit Publish).
+ *
+ * @param {object} params
+ * @param {object} params.recipe - Structured recipe JSON
+ * @param {string} params.transcript - Raw transcript
+ * @param {string} params.language - Detected language code
+ * @param {string} params.audioPath - Storage path of uploaded audio
+ * @param {string} params.originalName - Original filename
+ * @param {string} params.authorName - Author name
+ * @returns {Promise<{ recipeId: string }>}
+ */
+export async function saveRecipeToServer({ recipe, transcript, language, audioPath, originalName, authorName }) {
+  const response = await fetch(`${API_BASE}/save`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ recipe, transcript, language, audioPath, originalName, authorName }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Failed to save recipe: ${response.status}`);
   }
 
   return response.json();

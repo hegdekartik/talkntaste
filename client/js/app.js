@@ -5,7 +5,7 @@
  */
 
 import { AudioRecorder, formatTime } from './recorder.js';
-import { processAudio, fetchRecipes, wakeUpBackend } from './api.js';
+import { processAudio, fetchRecipes, wakeUpBackend, saveRecipeToServer } from './api.js';
 import { shareWhatsApp, shareTwitter, copyToClipboard } from './share.js';
 
 // Wake up backend immediately to avoid cold start delays
@@ -63,6 +63,15 @@ const shareTwitterBtn = document.getElementById('share-twitter-btn');
 const copyBtn = document.getElementById('copy-btn');
 const newRecipeBtn = document.getElementById('new-recipe-btn');
 const retryBtn = document.getElementById('retry-btn');
+const discardBtn = document.getElementById('discard-btn');
+const publishBtn = document.getElementById('publish-btn');
+const draftActions = document.getElementById('draft-actions');
+const libraryActions = document.getElementById('library-actions');
+
+// Search
+const searchBtn = document.getElementById('search-btn');
+const searchBar = document.getElementById('search-bar');
+const searchInput = document.getElementById('search-input');
 
 // Error
 const errorMessage = document.getElementById('error-message');
@@ -88,6 +97,8 @@ let currentState = 'idle';
 let recorder = null;
 let currentRecipe = null;
 let isEditing = false;
+let isDraft = false; // true when recipe came from recording (not library)
+let draftMeta = null; // { transcript, language, audioPath, originalName, authorName }
 
 
 // ============================================================
@@ -401,6 +412,8 @@ function handleCardTap(recipe) {
     authorName: recipe.author_name
   };
   
+  isDraft = false;
+  draftMeta = null;
   renderRecipe(currentRecipe);
   
   if (recipe.audio_url) {
@@ -513,8 +526,16 @@ async function processRecording(audioBlob, knownDuration = null) {
     // Short delay for visual feedback before showing result
     await delay(600);
 
-    // Render the recipe
+    // Render the recipe as a draft (not yet saved)
     currentRecipe = result.recipe;
+    isDraft = true;
+    draftMeta = {
+      transcript: result.transcript,
+      language: result.detectedLanguage,
+      audioPath: result.audioPath,
+      originalName: result.originalName,
+      authorName,
+    };
     renderRecipe(result.recipe);
     setState('result');
 
@@ -575,7 +596,24 @@ function renderRecipe(recipe) {
     stepsList.appendChild(createStepItem(step));
   }
 
-  // Reset edit mode
+  // Enable inline text editing by default on steps and ingredients
+  ingredientsList.querySelectorAll('.ingredient-item__text').forEach(el => {
+    el.contentEditable = 'true';
+  });
+  stepsList.querySelectorAll('.step-item__text').forEach(el => {
+    el.contentEditable = 'true';
+  });
+
+  // Show contextual action bar
+  if (isDraft) {
+    draftActions.style.display = 'flex';
+    libraryActions.style.display = 'none';
+  } else {
+    draftActions.style.display = 'none';
+    libraryActions.style.display = 'flex';
+  }
+
+  // Reset edit mode (for add/remove controls)
   setEditMode(false);
 }
 
@@ -608,7 +646,11 @@ function createStepItem(step) {
   li.innerHTML = `
     <span class="step-item__number">${step.stepNumber}</span>
     <span class="step-item__text" contenteditable="false">${escapeHtml(step.instruction)}</span>
-    <button class="step-item__remove" aria-label="Remove step">×</button>
+    <div class="step-item__controls">
+      <button class="step-item__move step-item__move--up" aria-label="Move step up" title="Move up">↑</button>
+      <button class="step-item__move step-item__move--down" aria-label="Move step down" title="Move down">↓</button>
+      <button class="step-item__remove" aria-label="Remove step">×</button>
+    </div>
   `;
 
   // Remove button
@@ -616,6 +658,26 @@ function createStepItem(step) {
     li.remove();
     renumberSteps();
     syncRecipeFromDOM();
+  });
+
+  // Move up
+  li.querySelector('.step-item__move--up').addEventListener('click', () => {
+    const prev = li.previousElementSibling;
+    if (prev) {
+      stepsList.insertBefore(li, prev);
+      renumberSteps();
+      syncRecipeFromDOM();
+    }
+  });
+
+  // Move down
+  li.querySelector('.step-item__move--down').addEventListener('click', () => {
+    const next = li.nextElementSibling;
+    if (next) {
+      stepsList.insertBefore(next, li);
+      renumberSteps();
+      syncRecipeFromDOM();
+    }
   });
 
   return li;
@@ -649,17 +711,21 @@ function setEditMode(editing) {
     recipeTitle,
     recipePrepTime,
     recipeServings,
-    ...ingredientsList.querySelectorAll('.ingredient-item__text'),
-    ...stepsList.querySelectorAll('.step-item__text'),
   ];
 
   for (const el of editableFields) {
     el.contentEditable = editing ? 'true' : 'false';
   }
 
-  // Show/hide add buttons
+  // Show/hide add buttons and step controls
   addIngredientBtn.style.display = editing ? 'block' : 'none';
   addStepBtn.style.display = editing ? 'block' : 'none';
+
+  // Show/hide step move and remove controls
+  const stepControls = stepsList.querySelectorAll('.step-item__controls');
+  stepControls.forEach(c => c.style.display = editing ? 'flex' : 'none');
+  const removeButtons = ingredientsList.querySelectorAll('.ingredient-item__remove');
+  removeButtons.forEach(b => b.style.display = editing ? 'flex' : 'none');
 }
 
 function syncRecipeFromDOM() {
@@ -777,7 +843,8 @@ function getLocalizedLabels(langCode) {
 newRecipeBtn.addEventListener('click', () => {
   currentRecipe = null;
   isEditing = false;
-  recipeAudio.src = '';
+  isDraft = false;
+  draftMeta = null;
   audioPlayerContainer.style.display = 'none';
   setState('idle');
 });
@@ -785,6 +852,8 @@ newRecipeBtn.addEventListener('click', () => {
 function resetApp() {
   currentRecipe = null;
   isEditing = false;
+  isDraft = false;
+  draftMeta = null;
   timerDisplay.textContent = '0:00';
   micInstruction.textContent = 'Tap to start recording';
   ingredientsList.innerHTML = '';
@@ -897,6 +966,82 @@ function init() {
 
   console.log('🍳 TalknTaste initialized');
 }
+
+// ============================================================
+// Discard / Publish
+// ============================================================
+discardBtn.addEventListener('click', () => {
+  showToast('Recipe discarded');
+  resetApp();
+});
+
+publishBtn.addEventListener('click', async () => {
+  if (!currentRecipe || !draftMeta) return;
+
+  syncRecipeFromDOM();
+  publishBtn.disabled = true;
+  publishBtn.querySelector('span').textContent = 'Publishing…';
+
+  try {
+    await saveRecipeToServer({
+      recipe: currentRecipe,
+      transcript: draftMeta.transcript,
+      language: draftMeta.language,
+      audioPath: draftMeta.audioPath,
+      originalName: draftMeta.originalName,
+      authorName: draftMeta.authorName,
+    });
+    showToast('Recipe published! 🎉');
+    isDraft = false;
+    draftMeta = null;
+    // Switch to library actions
+    draftActions.style.display = 'none';
+    libraryActions.style.display = 'flex';
+  } catch (error) {
+    console.error('Publish error:', error);
+    showToast('Failed to publish. Please try again.');
+  } finally {
+    publishBtn.disabled = false;
+    publishBtn.querySelector('span').textContent = 'Publish';
+  }
+});
+
+// ============================================================
+// Search in Library
+// ============================================================
+searchBtn.addEventListener('click', () => {
+  const isHidden = searchBar.classList.contains('hidden');
+  searchBar.classList.toggle('hidden');
+  if (isHidden) {
+    searchInput.focus();
+  } else {
+    searchInput.value = '';
+    // Reset to show all (respecting current tag filter)
+    applyFilter(activeFilter, filterChipsContainer?.querySelector('.filter-chip.active'));
+  }
+});
+
+searchInput.addEventListener('input', () => {
+  const query = searchInput.value.trim().toLowerCase();
+  let base = currentDatabaseRecipes;
+
+  // Apply tag filter first
+  if (activeFilter !== 'All') {
+    base = base.filter(r =>
+      r._normalizedTags && r._normalizedTags.some(t => t.toLowerCase() === activeFilter.toLowerCase())
+    );
+  }
+
+  // Then apply text search
+  if (query) {
+    base = base.filter(r =>
+      (r.title || '').toLowerCase().includes(query) ||
+      (r.author_name || '').toLowerCase().includes(query)
+    );
+  }
+
+  renderFilteredCards(base);
+});
 
 // Boot the app
 init();
