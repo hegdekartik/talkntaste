@@ -623,7 +623,8 @@ ul, ol {
   background: var(--bg-glass);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-xl);
-  padding: var(--space-xl);
+  padding: var(--space-lg);
+  margin: 0 -0.5rem; /* Allow it to breathe on small screens */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 12px 48px -8px rgba(0, 0, 0, 0.6), 
@@ -638,7 +639,7 @@ ul, ol {
 
 .recipe-card__title {
   font-family: var(--font-heading);
-  font-size: 1.6rem;
+  font-size: 1.4rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.3;
@@ -842,6 +843,56 @@ ul, ol {
   background: var(--bg-card-hover);
   border-radius: var(--radius-sm);
   box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* ---- Transcript Section ---- */
+.recipe-card__transcript {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border-glass);
+}
+
+.transcript-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  list-style: none;
+  padding: var(--space-xs) 0;
+  transition: color var(--duration-fast);
+}
+
+.transcript-summary::-webkit-details-marker {
+  display: none;
+}
+
+.transcript-summary:hover {
+  color: var(--accent);
+}
+
+.transcript-icon {
+  margin-left: auto;
+  transition: transform var(--duration-fast);
+}
+
+details[open] .transcript-icon {
+  transform: rotate(180deg);
+}
+
+.transcript-content {
+  margin-top: var(--space-md);
+  padding: var(--space-md);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-style: italic;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .step-item__controls {
@@ -1499,6 +1550,7 @@ audio {
 
   .recipe-card {
     padding: var(--space-2xl);
+    margin: 0; /* reset mobile margin */
   }
 
   .recipe-card__title {

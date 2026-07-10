@@ -51,6 +51,8 @@ const ingredientsList = document.getElementById('ingredients-list');
 const ingredientsHeading = document.getElementById('ingredients-heading');
 const stepsList = document.getElementById('steps-list');
 const stepsHeading = document.getElementById('steps-heading');
+const transcriptSection = document.getElementById('transcript-section');
+const recipeTranscript = document.getElementById('recipe-transcript');
 const addIngredientBtn = document.getElementById('add-ingredient-btn');
 const addStepBtn = document.getElementById('add-step-btn');
 const audioPlayerContainer = document.getElementById('audio-player-container');
@@ -409,7 +411,8 @@ function handleCardTap(recipe) {
     steps: recipe.steps,
     languageName: recipe.language_name,
     language: recipe.language,
-    authorName: recipe.author_name
+    authorName: recipe.author_name,
+    transcript: recipe.transcript
   };
   
   isDraft = false;
@@ -417,7 +420,6 @@ function handleCardTap(recipe) {
   renderRecipe(currentRecipe);
   
   if (recipe.audio_url) {
-    recipeAudio.src = recipe.audio_url;
     audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
     document.getElementById('recipe-audio').src = recipe.audio_url;
     audioPlayerContainer.style.display = 'block';
@@ -537,6 +539,13 @@ async function processRecording(audioBlob, knownDuration = null) {
       authorName,
     };
     renderRecipe(result.recipe);
+    
+    // Display local audio for draft
+    const localAudioUrl = URL.createObjectURL(audioBlob);
+    audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
+    document.getElementById('recipe-audio').src = localAudioUrl;
+    audioPlayerContainer.style.display = 'block';
+
     setState('result');
 
   } catch (error) {
@@ -615,6 +624,16 @@ function renderRecipe(recipe) {
 
   // Reset edit mode (for add/remove controls)
   setEditMode(false);
+
+  // Transcript
+  const transcriptToDisplay = recipe.transcript || (draftMeta ? draftMeta.transcript : null);
+  if (transcriptToDisplay) {
+    recipeTranscript.textContent = transcriptToDisplay;
+    transcriptSection.style.display = 'block';
+  } else {
+    recipeTranscript.textContent = '';
+    transcriptSection.style.display = 'none';
+  }
 }
 
 function createIngredientItem(ingredient) {
@@ -861,6 +880,10 @@ function resetApp() {
   recipeTitle.textContent = '';
   recipePrepTime.textContent = '';
   recipeServings.textContent = '';
+  audioPlayerContainer.style.display = 'none';
+  audioPlayerContainer.innerHTML = '';
+  transcriptSection.style.display = 'none';
+  recipeTranscript.textContent = '';
   resetProcessingView();
   setState('idle');
 }

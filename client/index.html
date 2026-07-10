@@ -196,6 +196,16 @@
           <ol id="steps-list" class="recipe-card__steps"></ol>
           <button id="add-step-btn" class="add-item-btn" style="display:none;">+ Add step</button>
         </div>
+
+        <!-- Transcript (Collapsible) -->
+        <details id="transcript-section" class="recipe-card__transcript" style="display:none;">
+          <summary class="transcript-summary">
+            <span>📄</span>
+            <span>View Transcript</span>
+            <svg class="transcript-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </summary>
+          <div id="recipe-transcript" class="transcript-content"></div>
+        </details>
       </article>
 
       <!-- Action Bar (contextual: draft vs library) -->
