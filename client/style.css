@@ -83,6 +83,7 @@ body {
   background: var(--bg-primary);
   min-height: 100dvh;
   overflow-x: hidden;
+  width: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -122,9 +123,11 @@ ul, ol {
   display: flex;
   flex-direction: column;
   max-width: 480px;
+  width: 100%;
   margin: 0 auto;
   padding: var(--space-lg) var(--space-md);
   padding-bottom: calc(var(--space-2xl) + env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
 }
 
 
@@ -134,8 +137,7 @@ ul, ol {
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 1rem;
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .header__brand {
@@ -175,8 +177,8 @@ ul, ol {
   opacity: 0;
   transform: translateY(10px);
   animation: slideUp 0.4s ease forwards;
-  max-width: 800px;
-  margin: 0 auto;
+  width: 100%;
+  min-width: 0;
 }
 
 .app[data-state="idle"] .view--input,
@@ -1250,12 +1252,14 @@ details[open] .transcript-icon {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
-  padding: 0 0.5rem;
+  padding: 0 0.25rem;
   position: sticky;
   top: 0;
   background: var(--bg-primary);
   z-index: 20;
   padding-bottom: 1rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .back-btn {
@@ -1277,10 +1281,14 @@ details[open] .transcript-icon {
 
 .database-header__title {
   font-family: var(--font-heading);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .database-header__action {
@@ -1304,8 +1312,9 @@ details[open] .transcript-icon {
   display: flex;
   gap: 0.5rem;
   overflow-x: auto;
-  padding: 0 0.5rem 1.5rem 0.5rem;
+  padding: 0 0.25rem 1rem 0.25rem;
   scrollbar-width: none;
+  width: 100%;
 }
 .filter-chips::-webkit-scrollbar {
   display: none;
@@ -1313,11 +1322,12 @@ details[open] .transcript-icon {
 
 /* ---- Search Bar ---- */
 .search-bar {
-  padding: 0 0.5rem 1rem 0.5rem;
+  padding: 0 0.25rem 1rem 0.25rem;
   overflow: hidden;
   transition: max-height var(--duration-normal) var(--ease-out), opacity var(--duration-fast);
   max-height: 60px;
   opacity: 1;
+  width: 100%;
 }
 
 .search-bar.hidden {
@@ -1370,14 +1380,16 @@ details[open] .transcript-icon {
 /* Carousel Container */
 .carousel-container {
   width: 100%;
-  margin: 0 auto;
+  min-width: 0;
 }
 
 .recipe-carousel {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 0 0.5rem 2rem 0.5rem;
+  padding: 0 0.25rem 2rem 0.25rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .recipe-mini-card {
