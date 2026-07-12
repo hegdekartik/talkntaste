@@ -68,12 +68,12 @@ async function getAudioDuration(filePath) {
  * @param {string} originalName - Original filename for logging
  * @returns {Promise<{ transcript: string, language: string }>}
  */
-export async function transcribeAudio(filePath, originalName) {
+export async function transcribeAudio(filePath, originalName, languageHint = null) {
   // Step 0: Get duration
   const { duration, isEstimate } = await getAudioDuration(filePath);
 
   if (duration !== null) {
-    console.log(`[Sarvam] Audio duration: ${duration.toFixed(1)}s${isEstimate ? ' (estimated from file size)' : ' (from metadata)'} | File: ${originalName}`);
+    console.log(`[Sarvam] Audio duration: ${duration.toFixed(1)}s${isEstimate ? ' (estimated from file size)' : ' (from metadata)'} | File: ${originalName}${languageHint ? ` | Language hint: ${languageHint}` : ''}`);
 
     // Only hard-reject on accurate metadata duration, never on estimates.
     // File-size estimates can be wildly inaccurate (e.g. variable bitrate, container overhead).
@@ -91,14 +91,14 @@ export async function transcribeAudio(filePath, originalName) {
 
   if (useBatchApi) {
     console.log(`[Sarvam] Using BATCH API for ${originalName} (${duration.toFixed(1)}s > ${syncThreshold}s)`);
-    const jobId = await startBatchJob(filePath, originalName);
+    const jobId = await startBatchJob(filePath, originalName, languageHint);
     return { isBatch: true, jobId };
   }
 
   // Sync path — with automatic fallback to batch if sync rejects due to duration
   console.log(`[Sarvam] Using SYNC API for ${originalName}${duration === null ? ' (duration unknown — will fallback to batch if needed)' : ''}`);
   try {
-    return await transcribeSync(filePath, originalName);
+    return await transcribeSync(filePath, originalName, languageHint);
   } catch (syncError) {
     const msg = (syncError?.message || '').toLowerCase();
     const statusCode = syncError?.statusCode || syncError?.status;
@@ -120,7 +120,7 @@ export async function transcribeAudio(filePath, originalName) {
 
     if (isDurationError) {
       console.log(`[Sarvam] Sync API rejected (likely >30s) — falling back to BATCH API for ${originalName}`);
-      const jobId = await startBatchJob(filePath, originalName);
+      const jobId = await startBatchJob(filePath, originalName, languageHint);
       return { isBatch: true, jobId };
     }
 
@@ -130,18 +130,27 @@ export async function transcribeAudio(filePath, originalName) {
 
 /**
  * Synchronous transcription via Sarvam SDK (≤30s audio).
+ * @param {string} languageHint - Optional BCP-47 language code (e.g. 'kn-IN') for dominant language
  */
-async function transcribeSync(filePath, originalName) {
+async function transcribeSync(filePath, originalName, languageHint = null) {
   try {
     const fileStream = fs.createReadStream(filePath);
 
-    const response = await client.speechToText.transcribe({
+    const requestParams = {
       file: fileStream,
       model: 'saaras:v3',
-    });
+    };
+
+    // If user specified a language, hint it to Sarvam for better accuracy.
+    // saaras:v3 still handles code-mixed speech (e.g. Kannada + English words).
+    if (languageHint) {
+      requestParams.language_code = languageHint;
+    }
+
+    const response = await client.speechToText.transcribe(requestParams);
 
     const transcript = response.transcript || response.text || '';
-    const language = response.language_code || response.language || 'unknown';
+    const language = response.language_code || response.language || languageHint || 'unknown';
 
     console.log(`[Sarvam] Sync transcribed ${originalName} | Language: ${language} | Length: ${transcript.length} chars`);
 
@@ -166,8 +175,9 @@ async function transcribeSync(filePath, originalName) {
  * 3. Upload file to signed URL
  * 4. Start job
  * 5. Return jobId for polling
+ * @param {string|null} languageHint - Optional BCP-47 language code for dominant language
  */
-export async function startBatchJob(filePath, originalName) {
+export async function startBatchJob(filePath, originalName, languageHint = null) {
   const apiKey = process.env.SARVAM_API_KEY;
   if (!apiKey) {
     throw new Error('SARVAM_API_KEY is not configured');
@@ -181,13 +191,15 @@ export async function startBatchJob(filePath, originalName) {
   try {
     // Step 1: Create a batch job
     console.log('[Sarvam Batch] Creating job...');
+    const jobParams = { model: 'saaras:v3' };
+    if (languageHint) {
+      jobParams.language_code = languageHint;
+    }
     const createRes = await fetch(`${SARVAM_API_BASE}/speech-to-text/job/v1`, {
       method: 'POST',
       headers,
       body: JSON.stringify({
-        job_parameters: {
-          model: 'saaras:v3',
-        },
+        job_parameters: jobParams,
       }),
     });
 

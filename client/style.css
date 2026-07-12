@@ -134,9 +134,9 @@ ul, ol {
 /* ---- Header ---- */
 .header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
-  padding: 1.5rem 1rem;
+  padding: 1rem 1rem 0.5rem;
   width: 100%;
 }
 
@@ -162,12 +162,14 @@ ul, ol {
 }
 
 
-
 .header__tagline {
   font-size: 0.85rem;
   color: var(--text-muted);
   margin-top: var(--space-xs);
+  margin-bottom: var(--space-md);
   letter-spacing: 0.04em;
+  text-align: center;
+  padding: 0 var(--space-md);
 }
 
 
@@ -209,8 +211,12 @@ ul, ol {
 /* ---- Mic Area ---- */
 .username-container {
   text-align: center;
-  margin-bottom: var(--space-lg);
-  padding-top: var(--space-md);
+  margin-bottom: var(--space-md);
+  padding-top: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .username-input {
@@ -245,7 +251,7 @@ ul, ol {
   align-items: center;
   justify-content: center;
   position: relative;
-  min-height: 320px;
+  min-height: 240px;
 }
 
 .waveform-canvas {
@@ -391,7 +397,7 @@ ul, ol {
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  margin-top: var(--space-lg);
+  margin-top: var(--space-sm);
   border-radius: var(--radius-full);
   background: rgba(245, 158, 11, 0.08);
   border: 1px solid rgba(245, 158, 11, 0.2);
@@ -400,7 +406,7 @@ ul, ol {
   font-size: 0.8rem;
   color: var(--accent-hover);
   animation: tipFadeIn 0.6s var(--ease-out) both;
-  animation-delay: 0.5s;
+  animation-delay: 0.3s;
 }
 
 @keyframes tipFadeIn {
@@ -455,7 +461,8 @@ ul, ol {
 .upload-area {
   display: flex;
   justify-content: center;
-  padding-top: var(--space-xl);
+  padding-top: var(--space-md);
+  padding-bottom: var(--space-sm);
 }
 
 .upload-label {
@@ -490,6 +497,80 @@ ul, ol {
 [data-state="recording"] .upload-area {
   opacity: 0;
   pointer-events: none;
+}
+
+
+/* ---- Language Selector ---- */
+.language-selector-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 240px;
+}
+
+.language-selector-icon {
+  position: absolute;
+  left: 0.85rem;
+  font-size: 0.9rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.language-select {
+  width: 100%;
+  padding: 0.55rem 1rem 0.55rem 2.2rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-glass);
+  background: var(--bg-glass);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.9rem center;
+  padding-right: 2.2rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.language-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+[data-state="recording"] .language-selector-wrapper {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s var(--ease-out);
+}
+
+
+/* ---- Result View — Back to Library Button ---- */
+.result-back-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+  transition: all var(--duration-fast) var(--ease-out);
+  background: none;
+  border: none;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.result-back-btn:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 
@@ -1426,6 +1507,20 @@ details[open] .transcript-icon {
   min-height: 90px;
   object-fit: cover;
   background: var(--bg-secondary);
+}
+
+/* Emoji thumbnail (replaces static image) */
+.rmc-emoji {
+  width: 90px;
+  min-height: 90px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.2rem;
+  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .rmc-content {

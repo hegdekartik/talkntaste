@@ -33,19 +33,19 @@ export default async function handler(req, res) {
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch (e) {}
     }
-    const { storagePath, originalName } = body || {};
+    const { storagePath, originalName, languageHint } = body || {};
 
     if (!storagePath) {
       return res.status(400).json({ error: 'Missing storagePath' });
     }
 
-    console.log(`[API] Full pipeline for ${originalName}, path: ${storagePath}`);
+    console.log(`[API] Full pipeline for ${originalName}, path: ${storagePath}${languageHint ? `, language hint: ${languageHint}` : ''}`);
 
     // Download audio from Supabase to local /tmp for Sarvam
     filePath = await downloadAudio(storagePath);
 
     // Transcribe
-    const transcribeResult = await transcribeAudio(filePath, originalName);
+    const transcribeResult = await transcribeAudio(filePath, originalName, languageHint || null);
 
     if (transcribeResult.isBatch) {
       // For long audio, Vercel would timeout. We return 202 to trigger client polling.

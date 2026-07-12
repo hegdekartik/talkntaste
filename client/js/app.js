@@ -27,6 +27,7 @@ const durationTip = document.getElementById('duration-tip');
 const durationTipClose = document.getElementById('duration-tip-close');
 const navRecordBtn = document.getElementById('nav-record-btn');
 const navLibraryBtn = document.getElementById('nav-library-btn');
+const languageSelect = document.getElementById('language-select');
 
 // Database view
 const backToRecordBtn = document.getElementById('back-to-record-btn');
@@ -69,6 +70,7 @@ const discardBtn = document.getElementById('discard-btn');
 const publishBtn = document.getElementById('publish-btn');
 const draftActions = document.getElementById('draft-actions');
 const libraryActions = document.getElementById('library-actions');
+const backToLibraryBtn = document.getElementById('back-to-library-btn');
 
 // Search
 const searchBtn = document.getElementById('search-btn');
@@ -91,9 +93,20 @@ if (savedUsername) {
   usernameInput.value = savedUsername;
 }
 
+const savedLanguage = localStorage.getItem('talkntaste_language');
+if (savedLanguage && languageSelect) {
+  languageSelect.value = savedLanguage;
+}
+
 usernameInput.addEventListener('change', (e) => {
   localStorage.setItem('talkntaste_username', e.target.value.trim());
 });
+
+if (languageSelect) {
+  languageSelect.addEventListener('change', (e) => {
+    localStorage.setItem('talkntaste_language', e.target.value);
+  });
+}
 
 let currentState = 'idle';
 let recorder = null;
@@ -198,7 +211,8 @@ async function stopRecording() {
 
   if (result && result.blob) {
     // Pass recorded duration to processRecording for batch mode detection
-    await processRecording(result.blob, result.duration);
+    const languageHint = languageSelect ? languageSelect.value : '';
+    await processRecording(result.blob, result.duration, languageHint);
   }
 }
 
@@ -245,6 +259,13 @@ navRecordBtn.addEventListener('click', () => {
 backToRecordBtn.addEventListener('click', () => {
   setState('idle');
 });
+
+// Back to library from result view
+if (backToLibraryBtn) {
+  backToLibraryBtn.addEventListener('click', () => {
+    setState('database');
+  });
+}
 
 let currentDatabaseRecipes = [];
 let activeFilter = 'All';
@@ -368,12 +389,12 @@ function renderFilteredCards(recipes) {
       authorStr = `<p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">By ${recipe.author_name}</p>`;
     }
     
-    // Use a static food image for all recipes
-    const staticImageUrl = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80';
+    // Pick a food emoji based on recipe tags/title
+    const recipeEmoji = pickFoodEmoji(recipe);
     
     card.innerHTML = `
       <div class="rmc-header">
-        <img src="${staticImageUrl}" alt="Food" class="rmc-image" />
+        <div class="rmc-emoji">${recipeEmoji}</div>
       </div>
       <div class="rmc-content">
         <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
@@ -400,6 +421,44 @@ function renderFilteredCards(recipes) {
   });
 }
 
+/**
+ * Pick a representative food emoji for a recipe based on its tags and title.
+ */
+function pickFoodEmoji(recipe) {
+  const allText = [
+    (recipe.title || '').toLowerCase(),
+    ...(recipe._normalizedTags || []).map(t => t.toLowerCase()),
+  ].join(' ');
+
+  // Ordered by specificity — first match wins
+  const emojiMap = [
+    { keywords: ['biryani', 'pulao', 'fried rice'], emoji: '🍚' },
+    { keywords: ['dosa', 'idli', 'uttapam', 'appam'], emoji: '🫓' },
+    { keywords: ['roti', 'chapati', 'paratha', 'naan', 'bread'], emoji: '🫶' },
+    { keywords: ['chicken', 'murgh', 'kozhi'], emoji: '🍗' },
+    { keywords: ['mutton', 'lamb', 'meat', 'non-vegetarian'], emoji: '🍖' },
+    { keywords: ['fish', 'prawn', 'shrimp', 'seafood'], emoji: '🐟' },
+    { keywords: ['egg', 'omelette', 'anda'], emoji: '🥚' },
+    { keywords: ['sambar', 'rasam', 'soup', 'dal', 'daal'], emoji: '🍲' },
+    { keywords: ['paneer', 'cheese'], emoji: '🧀' },
+    { keywords: ['halwa', 'kheer', 'payasam', 'laddu', 'dessert', 'sweet'], emoji: '🍮' },
+    { keywords: ['pakoda', 'pakora', 'samosa', 'snack', 'bhaji'], emoji: '🧆' },
+    { keywords: ['salad', 'raita'], emoji: '🥗' },
+    { keywords: ['chutney', 'pickle'], emoji: '🫙' },
+    { keywords: ['tea', 'chai', 'coffee'], emoji: '☕' },
+    { keywords: ['juice', 'smoothie', 'drink'], emoji: '🥤' },
+    { keywords: ['curry', 'gravy', 'masala'], emoji: '🍛' },
+    { keywords: ['south-indian'], emoji: '🥘' },
+    { keywords: ['north-indian'], emoji: '🫕' },
+    { keywords: ['vegetarian'], emoji: '🥦' },
+  ];
+
+  for (const { keywords, emoji } of emojiMap) {
+    if (keywords.some(kw => allText.includes(kw))) return emoji;
+  }
+  return '🍽️'; // generic fallback
+}
+
 // Scroll listener removed for vertical list
 
 function handleCardTap(recipe) {
@@ -418,6 +477,9 @@ function handleCardTap(recipe) {
   isDraft = false;
   draftMeta = null;
   renderRecipe(currentRecipe);
+  
+  // Show back-to-library button (library context)
+  if (backToLibraryBtn) backToLibraryBtn.style.display = 'flex';
   
   if (recipe.audio_url) {
     audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
@@ -471,14 +533,15 @@ async function handleFileUpload(file) {
     return;
   }
 
-  processRecording(file, duration);
+  const languageHint = languageSelect ? languageSelect.value : '';
+  processRecording(file, duration, languageHint);
 }
 
 
 // ============================================================
 // Processing Pipeline
 // ============================================================
-async function processRecording(audioBlob, knownDuration = null) {
+async function processRecording(audioBlob, knownDuration = null, languageHint = '') {
   setState('processing');
   resetProcessingView();
 
@@ -509,7 +572,7 @@ async function processRecording(audioBlob, knownDuration = null) {
         stepTranscribe.classList.add('done');
         stepStructure.classList.add('active');
       },
-    }, authorName);
+    }, authorName, languageHint);
 
     // Show transcript preview
     if (result.transcript) {
@@ -545,6 +608,9 @@ async function processRecording(audioBlob, knownDuration = null) {
     audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
     document.getElementById('recipe-audio').src = localAudioUrl;
     audioPlayerContainer.style.display = 'block';
+
+    // Hide back-to-library button (draft context)
+    if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
 
     setState('result');
 
@@ -884,6 +950,7 @@ function resetApp() {
   audioPlayerContainer.innerHTML = '';
   transcriptSection.style.display = 'none';
   recipeTranscript.textContent = '';
+  if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
   resetProcessingView();
   setState('idle');
 }

@@ -20,7 +20,7 @@ export function wakeUpBackend() {
  * @param {string|null} authorName - Optional author name
  * @returns {Promise<{ transcript: string, detectedLanguage: string, recipe: object }>}
  */
-export async function processAudio(audioBlob, callbacks = {}, authorName = null) {
+export async function processAudio(audioBlob, callbacks = {}, authorName = null, languageHint = '') {
   const formData = new FormData();
   const ext = getExtension(audioBlob.type);
   formData.append('audio', audioBlob, `recording.${ext}`);
@@ -63,7 +63,11 @@ export async function processAudio(audioBlob, callbacks = {}, authorName = null)
     processResponse = await fetch(`${API_BASE}/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ storagePath, originalName: `recording.${ext}` }),
+      body: JSON.stringify({
+        storagePath,
+        originalName: `recording.${ext}`,
+        ...(languageHint ? { languageHint } : {}),
+      }),
     });
   } catch (err) {
     console.error('[API] fetch /process error:', err);
