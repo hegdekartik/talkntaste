@@ -33,17 +33,17 @@ export default async function handler(req, res) {
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch (e) {}
     }
-    const { storagePath, originalName } = body || {};
+    const { storagePath, originalName, languageHint } = body || {};
 
     if (!storagePath) {
       return res.status(400).json({ error: 'Missing storagePath' });
     }
 
-    console.log(`[API] Transcribe request: ${originalName}, path: ${storagePath}`);
+    console.log(`[API] Transcribe request: ${originalName}, path: ${storagePath}${languageHint ? `, language hint: ${languageHint}` : ''}`);
 
     filePath = await downloadAudio(storagePath);
     
-    const result = await transcribeAudio(filePath, originalName);
+    const result = await transcribeAudio(filePath, originalName, languageHint || null);
     res.status(200).json(result);
   } catch (error) {
     console.error('[API] Transcribe error:', error.message);

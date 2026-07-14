@@ -1,4 +1,4 @@
-import { structureRecipe } from './_lib/openai.js';
+import { structureRecipe } from './_lib/sarvam-llm.js';
 
 export const config = {
   maxDuration: 60,

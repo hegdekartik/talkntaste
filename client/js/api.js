@@ -124,9 +124,10 @@ export async function processAudio(audioBlob, callbacks = {}, authorName = null,
  * Transcribe audio only (without structuring).
  *
  * @param {Blob} audioBlob
+ * @param {string} languageHint
  * @returns {Promise<{ transcript: string, language: string }>}
  */
-export async function transcribeAudio(audioBlob) {
+export async function transcribeAudio(audioBlob, languageHint = '') {
   const formData = new FormData();
   const ext = getExtension(audioBlob.type);
 
@@ -166,7 +167,11 @@ export async function transcribeAudio(audioBlob) {
     response = await fetch(`${API_BASE}/transcribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ storagePath, originalName: `recording.${ext}` }),
+      body: JSON.stringify({
+        storagePath,
+        originalName: `recording.${ext}`,
+        ...(languageHint ? { languageHint } : {}),
+      }),
     });
   } catch (err) {
     console.error('[API] fetch /transcribe error:', err);

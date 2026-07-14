@@ -42,6 +42,12 @@ const stepStructure = document.getElementById('step-structure');
 const transcriptPreview = document.getElementById('transcript-preview');
 const transcriptText = document.getElementById('transcript-text');
 
+// Transcript Review view
+const reviewTranscriptText = document.getElementById('review-transcript-text');
+const reviewAudioContainer = document.getElementById('review-audio-container');
+const reviewRetryBtn = document.getElementById('review-retry-btn');
+const reviewProceedBtn = document.getElementById('review-proceed-btn');
+
 // Result view
 const languageName = document.getElementById('language-name');
 const recipeTitle = document.getElementById('recipe-title');
@@ -153,6 +159,8 @@ function routeFocus(state) {
     if (state === 'result' || state === 'editing') {
       recipeTitle.setAttribute('tabindex', '-1');
       recipeTitle.focus();
+    } else if (state === 'transcript-review') {
+      reviewProceedBtn.focus();
     } else if (state === 'processing') {
       const pView = document.getElementById('processing-view');
       pView.setAttribute('tabindex', '-1');
@@ -541,9 +549,19 @@ async function handleFileUpload(file) {
 // ============================================================
 // Processing Pipeline
 // ============================================================
+import { transcribeAudio, structureRecipe } from './api.js';
+
+let pendingAudioBlob = null;
+let pendingLanguageHint = '';
+let pendingAuthorName = '';
+let pendingTranscriptionData = null;
+
 async function processRecording(audioBlob, knownDuration = null, languageHint = '') {
   setState('processing');
   resetProcessingView();
+  
+  pendingAudioBlob = audioBlob;
+  pendingLanguageHint = languageHint;
 
   // Show batch mode messaging if audio is long
   const isBatchMode = knownDuration !== null && knownDuration > 30;
@@ -562,49 +580,75 @@ async function processRecording(audioBlob, knownDuration = null, languageHint = 
     } else {
       localStorage.setItem('talkntaste_username', authorName);
     }
+    pendingAuthorName = authorName;
 
-    const result = await processAudio(audioBlob, {
-      onTranscribing: () => {
-        stepTranscribe.classList.add('active');
-      },
-      onStructuring: () => {
-        stepTranscribe.classList.remove('active');
-        stepTranscribe.classList.add('done');
-        stepStructure.classList.add('active');
-      },
-    }, authorName, languageHint);
+    const data = await transcribeAudio(audioBlob, languageHint);
 
-    // Show transcript preview
-    if (result.transcript) {
-      transcriptText.textContent = result.transcript;
-      transcriptPreview.classList.add('visible');
+    if (!data.transcript) {
+      throw new Error('Could not extract any text from the audio. Please try again with clearer audio.');
     }
 
-    // Mark transcription as done
-    stepTranscribe.classList.remove('active');
-    stepTranscribe.classList.add('done');
+    pendingTranscriptionData = data;
+
+    // Show Transcript Review View
+    reviewTranscriptText.textContent = data.transcript;
+    
+    const localAudioUrl = URL.createObjectURL(audioBlob);
+    reviewAudioContainer.innerHTML = `<audio controls style="width:100%; border-radius: 8px;" src="${localAudioUrl}"></audio>`;
+
+    setState('transcript-review');
+
+  } catch (error) {
+    console.error('Transcription error:', error);
+    showError(error.message || 'Something went wrong during transcription. Please try again.');
+    setState('idle');
+  }
+}
+
+// Wire up Transcript Review actions
+reviewRetryBtn.addEventListener('click', () => {
+  setState('idle');
+});
+
+reviewProceedBtn.addEventListener('click', async () => {
+  if (!pendingTranscriptionData) return;
+
+  setState('processing');
+  
+  // Mark transcription as done, activate structuring
+  stepTranscribe.classList.remove('active');
+  stepTranscribe.classList.add('done');
+  stepStructure.classList.add('active');
+
+  // Show transcript preview in processing view
+  transcriptText.textContent = pendingTranscriptionData.transcript;
+  transcriptPreview.classList.add('visible');
+
+  try {
+    const data = pendingTranscriptionData;
+    const structureRes = await structureRecipe(data.transcript, data.detectedLanguage || data.language);
 
     // Mark structuring as done
     stepStructure.classList.remove('active');
     stepStructure.classList.add('done');
 
     // Short delay for visual feedback before showing result
-    await delay(600);
+    await new Promise(resolve => setTimeout(resolve, 600));
 
     // Render the recipe as a draft (not yet saved)
-    currentRecipe = result.recipe;
+    currentRecipe = structureRes.recipe;
     isDraft = true;
     draftMeta = {
-      transcript: result.transcript,
-      language: result.detectedLanguage,
-      audioPath: result.audioPath,
-      originalName: result.originalName,
-      authorName,
+      transcript: data.transcript,
+      language: data.detectedLanguage || data.language,
+      audioPath: data.audioPath,
+      originalName: data.originalName,
+      authorName: pendingAuthorName,
     };
-    renderRecipe(result.recipe);
+    renderRecipe(currentRecipe);
     
     // Display local audio for draft
-    const localAudioUrl = URL.createObjectURL(audioBlob);
+    const localAudioUrl = URL.createObjectURL(pendingAudioBlob);
     audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
     document.getElementById('recipe-audio').src = localAudioUrl;
     audioPlayerContainer.style.display = 'block';
@@ -615,10 +659,11 @@ async function processRecording(audioBlob, knownDuration = null, languageHint = 
     setState('result');
 
   } catch (error) {
-    console.error('Processing error:', error);
-    showError(error.message || 'Something went wrong. Please try again.');
+    console.error('Structuring error:', error);
+    showError(error.message || 'Something went wrong during structuring. Please try again.');
   }
-}
+});
+
 
 function resetProcessingView() {
   stepTranscribe.classList.remove('active', 'done');

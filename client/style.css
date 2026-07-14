@@ -186,6 +186,7 @@ ul, ol {
 .app[data-state="idle"] .view--input,
 .app[data-state="recording"] .view--input,
 .app[data-state="processing"] .view--processing,
+.app[data-state="transcript-review"] .view--transcript-review,
 .app[data-state="result"] .view--result,
 .app[data-state="editing"] .view--result,
 .app[data-state="error"] .view--error,
@@ -547,6 +548,75 @@ ul, ol {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s var(--ease-out);
+}
+
+
+/* ---- Transcript Review View ---- */
+.view--transcript-review {
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md);
+}
+
+.review-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-glass);
+  padding: var(--space-xl);
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+  animation: slideUpFade 0.4s var(--ease-out);
+}
+
+.review-card__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+}
+
+.review-card__subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: -0.5rem;
+}
+
+.review-transcript {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--border-glass);
+}
+
+.review-transcript__text {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.review-audio-container {
+  width: 100%;
+  margin: var(--space-xs) 0;
+}
+
+.review-actions {
+  display: flex;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.review-actions .btn {
+  flex: 1;
+  justify-content: center;
+  padding: 0.85rem;
 }
 
 

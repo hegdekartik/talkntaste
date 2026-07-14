@@ -146,6 +146,33 @@
       </div>
     </section>
 
+    <!-- ===== TRANSCRIPT REVIEW VIEW ===== -->
+    <section id="transcript-review-view" class="view view--transcript-review">
+      <div class="review-card">
+        <h2 class="review-card__title">Review Transcript</h2>
+        <p class="review-card__subtitle">Here's what we heard. Does it look correct?</p>
+        
+        <div class="review-transcript">
+          <p id="review-transcript-text" class="review-transcript__text"></p>
+        </div>
+
+        <div id="review-audio-container" class="review-audio-container">
+          <!-- Audio element will be injected here -->
+        </div>
+
+        <div class="review-actions">
+          <button id="review-retry-btn" class="btn btn--secondary" aria-label="Retry recording">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            Retry
+          </button>
+          <button id="review-proceed-btn" class="btn btn--primary" aria-label="Proceed to structuring">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            Looks Good
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- ===== DATABASE VIEW ===== -->
     <section id="database-view" class="view view--database">
       <div class="database-header">
