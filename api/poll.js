@@ -47,6 +47,8 @@ export default async function handler(req, res) {
       status: 'completed',
       transcript,
       detectedLanguage: language,
+      audioPath,
+      originalName,
     });
   } catch (error) {
     console.error('[API] Poll error:', error.message);

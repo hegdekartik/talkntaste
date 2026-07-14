@@ -11,7 +11,7 @@ TalknTaste uses a unified hosting approach on **Vercel**, backed by **Supabase**
 ### Vercel (Frontend & Backend)
 Vercel handles the entire application lifecycle in a single deployment:
 1. **Frontend (`client/`)**: Vercel builds the Vite static application and serves it via its Global Edge CDN. This ensures blazing fast UI loading worldwide.
-2. **Backend API (`api/`)**: Any file inside the `api/` folder is automatically deployed as a **Serverless Node.js Function**. This handles all the secure logic (calling Sarvam AI, OpenAI, and structuring data) without the need for a dedicated, always-on Express server.
+2. **Backend API (`api/`)**: Any file inside the `api/` folder is automatically deployed as a **Serverless Node.js Function**. This handles all the secure logic (calling Sarvam AI for transcription and LLM structuring, plus managing OpenAI fallbacks) without the need for a dedicated, always-on Express server.
 
 ### Supabase (Database & Storage)
 Supabase acts as the Backend-as-a-Service (BaaS) for data persistence:
@@ -44,7 +44,7 @@ Vercel functions on the Hobby tier timeout after 10 seconds (or 60s on Pro). AI 
 
 Deploying TalknTaste requires zero configuration files beyond the standard `vercel.json` provided in the repository.
 
-1. **Environment Variables**: Ensure `SARVAM_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY` are securely added to the Vercel project settings.
+1. **Environment Variables**: Ensure `SARVAM_API_KEY`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY` are securely added to the Vercel project settings. The `OPENAI_API_KEY` is also recommended as a safety fallback in case the Sarvam LLM fails.
 2. **Build Settings**: Vercel automatically detects the Vite framework. `npm run build` within the client directory generates the static frontend.
 3. **CORS**: Because the frontend and the `/api` routes share the same domain (e.g., `talkntaste.vercel.app`), there are zero Cross-Origin Resource Sharing (CORS) issues, making API requests natively secure.
 

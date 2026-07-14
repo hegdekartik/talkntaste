@@ -24,7 +24,7 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 | **Backend** | Vercel Serverless Functions (`/api/*`) |
 | **Database & Storage** | [Supabase](https://supabase.com) (PostgreSQL + Blob Storage) |
 | **Speech-to-Text** | [Sarvam AI](https://sarvam.ai) (Saaras v3) |
-| **Recipe Structuring** | OpenAI GPT-4o-mini (Structured Outputs) |
+| **Recipe Structuring** | Sarvam AI (sarvam-105b) with OpenAI GPT-4o-mini fallback |
 | **Audio Recording** | Web MediaRecorder API |
 
 ## 📦 Project Structure
@@ -42,10 +42,17 @@ talkntaste/
 │   │   ├── app.js        # Core state machine & UI controller
 │   │   ├── api.js        # API communication logic
 │   │   └── ...
+├── docs/                 # System architecture, deployment, and marketing guides
 ├── vercel.json           # Vercel deployment configuration
 ├── .env.example
 └── package.json
 ```
+
+## 📚 Documentation
+- [System Design](docs/system_design.md)
+- [Deployment Guide](docs/deployment.md)
+- [MVP Document](docs/mvp_document.md)
+- [Growth & Marketing](docs/growth_and_marketing.md)
 
 ## 🚀 Getting Started
 
@@ -53,8 +60,8 @@ talkntaste/
 
 - [Node.js](https://nodejs.org) v18+
 - [Sarvam AI API key](https://docs.sarvam.ai)
-- [OpenAI API key](https://platform.openai.com/api-keys)
 - [Supabase Project](https://supabase.com) (URL and Anon Key)
+- [OpenAI API key](https://platform.openai.com/api-keys) *(Optional: used as a fallback if Sarvam LLM fails)*
 
 ### Setup
 
@@ -69,7 +76,7 @@ cd client && npm install && cd ..
 
 # Configure API keys
 cp .env.example .env
-# Edit .env with your actual keys for Sarvam, OpenAI, and Supabase
+# Edit .env with your actual keys for Sarvam, Supabase, and optionally OpenAI
 ```
 
 ### Run Locally
@@ -90,7 +97,7 @@ The project is fully configured to deploy to Vercel as a single app.
 1. **Push** this repository to GitHub.
 2. **Import** the project into Vercel.
 3. Set the **Framework Preset** to **Vite**.
-4. Add your **Environment Variables** (`SARVAM_API_KEY`, `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`) in the Vercel dashboard.
+4. Add your **Environment Variables** (`SARVAM_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and optionally `OPENAI_API_KEY`) in the Vercel dashboard.
 5. **Deploy**. Vercel will build the frontend and deploy the `api/` folder as serverless functions.
 
 ## 🔌 API Endpoints
@@ -100,7 +107,7 @@ The project is fully configured to deploy to Vercel as a single app.
 | `POST` | `/api/upload-url` | Generates a signed Supabase URL for direct client audio uploads |
 | `POST` | `/api/process` | Handles audio processing, triggers Sarvam AI transcription |
 | `POST` | `/api/poll` | Polls Sarvam AI for long-audio batch transcription results |
-| `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes via OpenAI |
+| `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes via Sarvam LLM |
 | `POST` | `/api/save` | Saves the structured recipe to Supabase PostgreSQL |
 | `GET`  | `/api/recipes` | Fetches the user's recipe library from Supabase |
 

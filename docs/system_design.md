@@ -20,7 +20,8 @@ TalknTaste is a voice-first web application that allows users to speak a recipe 
 - **Supabase PostgreSQL**: Relational data store for the recipe library.
 - **Supabase Storage**: Blob storage for persisting raw audio recordings (configured as Public bucket for playback).
 - **Sarvam AI (Saaras v3)**: STT engine highly specialized for Indian language accuracy.
-- **OpenAI (GPT-4o-mini)**: Uses strict Structured Outputs to reliably map raw, conversational transcripts into standard JSON recipe objects.
+- **Sarvam AI (sarvam-105b)**: Flagship LLM used to accurately map raw, conversational transcripts into standard JSON recipe objects while preserving regional languages perfectly.
+- **OpenAI (GPT-4o-mini)**: Serves strictly as a safety fallback in case the primary Sarvam LLM encounters an issue.
 
 ---
 
@@ -40,12 +41,14 @@ TalknTaste is a voice-first web application that allows users to speak a recipe 
    - **Batch Flow (> 30s)**: Sent to Sarvam AI batch processing. Returns a `jobId` and `202 Accepted` to the client.
 4. **Polling**: If batched, the client loops `POST /api/poll` until the transcript is ready, ensuring long processes do not trigger Vercel timeout limits.
 
-### Phase 3: Structuring
-1. Client sends the raw transcript to `POST /api/structure`.
-2. `api/_lib/openai.js` calls GPT-4o-mini. The prompt enforces:
+### Phase 3: Transcript Review & Structuring
+1. **Review**: The raw transcript is presented to the user. They can retry or proceed.
+2. If proceeding, client sends the transcript to `POST /api/structure`.
+3. `api/_lib/sarvam-llm.js` calls Sarvam's `105b` model. The prompt enforces:
    - **Original Language Preservation**: JSON outputs must match the input language (e.g., Kannada audio yields Kannada text).
    - Inference of missing metadata (prep times, servings).
    - Segregation of ingredients (with quantities) from actionable steps.
+4. **Fallback**: If Sarvam returns invalid JSON, it falls back to `api/_lib/openai.js` (GPT-4o-mini) automatically.
 
 ### Phase 4: Database & Presentation
 1. Client sends a fire-and-forget `POST /api/save` with the structured recipe.
@@ -59,6 +62,6 @@ TalknTaste is a voice-first web application that allows users to speak a recipe 
 - **`POST /api/upload-url`**: Generates a signed Supabase Storage URL.
 - **`POST /api/process`**: Downloads audio, initiates Sarvam transcription, handles Sync vs Batch routing.
 - **`POST /api/poll`**: Checks Sarvam job status and fetches completed transcripts.
-- **`POST /api/structure`**: Maps transcript to JSON via OpenAI.
+- **`POST /api/structure`**: Maps transcript to JSON via Sarvam LLM (with OpenAI fallback).
 - **`POST /api/save`**: Saves to Supabase PostgreSQL.
 - **`GET /api/recipes`**: Retrieves the user's saved recipes for the Library tab.

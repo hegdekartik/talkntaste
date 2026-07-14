@@ -44,7 +44,20 @@ export default async function handler(req, res) {
     filePath = await downloadAudio(storagePath);
     
     const result = await transcribeAudio(filePath, originalName, languageHint || null);
-    res.status(200).json(result);
+    
+    if (result.isBatch) {
+      res.status(202).json({
+        ...result,
+        audioPath: storagePath,
+        originalName,
+      });
+    } else {
+      res.status(200).json({
+        ...result,
+        audioPath: storagePath,
+        originalName,
+      });
+    }
   } catch (error) {
     console.error('[API] Transcribe error:', error.message);
     res.status(500).json({ error: error.message });
