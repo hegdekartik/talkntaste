@@ -588,19 +588,36 @@ async function processRecording(audioBlob, knownDuration = null, languageHint = 
       throw new Error('Could not extract any text from the audio. Please try again with clearer audio.');
     }
 
-    pendingTranscriptionData = data;
+    // Transition immediately to structuring
+    stepTranscribe.classList.add('done');
+    stepTranscribe.classList.remove('active');
+    stepStructure.classList.add('active');
 
-    // Show Transcript Review View
-    reviewTranscriptText.textContent = data.transcript;
-    
+    const recipeData = await structureRecipe(data.transcript, data.detectedLanguage || data.language);
+
+    draftMeta = {
+      transcript: data.transcript,
+      language: data.detectedLanguage || data.language,
+      audioPath: data.audioPath,
+      originalName: data.originalName,
+      authorName: pendingAuthorName,
+    };
+
+    currentRecipe = recipeData.recipe;
+    isDraft = true;
+
+    // Create local object URL for instant playback
     const localAudioUrl = URL.createObjectURL(audioBlob);
-    reviewAudioContainer.innerHTML = `<audio controls style="width:100%; border-radius: 8px;" src="${localAudioUrl}"></audio>`;
+    audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
+    document.getElementById('recipe-audio').src = localAudioUrl;
+    audioPlayerContainer.style.display = 'block';
 
-    setState('transcript-review');
+    renderRecipe(currentRecipe);
+    setState('result');
 
   } catch (error) {
-    console.error('Transcription error:', error);
-    showError(error.message || 'Something went wrong during transcription. Please try again.');
+    console.error('Processing error:', error);
+    showError(error.message || 'Something went wrong. Please try again.');
     setState('idle');
   }
 }
