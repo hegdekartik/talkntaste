@@ -1570,13 +1570,16 @@ details[open] .transcript-icon {
   font-size: 0.85rem;
   font-weight: 500;
   white-space: nowrap;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: all 0.2s;
 }
 
 .filter-chip.active {
-  background: var(--accent-soft);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: var(--spice-saffron);
+  border-color: var(--spice-saffron);
+  color: var(--bg-primary);
+  box-shadow: 0 4px 12px rgba(232, 93, 4, 0.3);
 }
 
 /* Carousel Container */
@@ -1596,14 +1599,16 @@ details[open] .transcript-icon {
 
 .recipe-mini-card {
   width: 100%;
-  background: var(--bg-card);
+  background: var(--bg-glass);
   border: 1px solid var(--border-glass);
   border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: row;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
   transition: transform var(--duration-fast), box-shadow var(--duration-fast);
   outline: none;
 }
@@ -1639,7 +1644,8 @@ details[open] .transcript-icon {
   align-items: center;
   justify-content: center;
   font-size: 2.2rem;
-  background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+  background: linear-gradient(135deg, rgba(244, 162, 97, 0.2) 0%, rgba(232, 93, 4, 0.2) 100%);
+  border-right: 1px solid var(--border-glass);
   flex-shrink: 0;
   user-select: none;
 }
