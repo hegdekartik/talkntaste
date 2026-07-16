@@ -84,8 +84,12 @@ const recipeSchema = {
         ],
       },
     },
+    additionalInfo: {
+      type: 'string',
+      description: 'Any extra background stories, context, relevance, or non-instructional information the user provides about the dish. Leave empty if none.',
+    },
   },
-  required: ['title', 'language', 'languageName', 'servings', 'prepTime', 'ingredients', 'steps', 'tags'],
+  required: ['title', 'language', 'languageName', 'servings', 'prepTime', 'ingredients', 'steps', 'tags', 'additionalInfo'],
   additionalProperties: false,
 };
 
@@ -101,7 +105,8 @@ CRITICAL RULES:
 7. Break instructions into clear, numbered steps. Each step should be a single distinct cooking action.
 8. Extract ALL ingredients mentioned, including foundational ones often rushed through (water, salt, cooking oil, ghee).
 9. Include preparation states in notes where mentioned (e.g., "ಸಣ್ಣಗೆ ಹೆಚ್ಚಿದ" (finely chopped), "ಹುರಿದ" (roasted), "soaked overnight").
-10. TAGS: Select exactly 3 to 5 tags from this predefined set that best describe the recipe: vegetarian, non-vegetarian, vegan, south-indian, north-indian, snack, dessert, breakfast, lunch, dinner, quick, under-30-min, slow-cook, rice, bread, curry, chutney, pickle, beverage, salad. Do NOT invent new tags.`;
+10. TAGS: Select exactly 3 to 5 tags from this predefined set that best describe the recipe: vegetarian, non-vegetarian, vegan, south-indian, north-indian, snack, dessert, breakfast, lunch, dinner, quick, under-30-min, slow-cook, rice, bread, curry, chutney, pickle, beverage, salad. Do NOT invent new tags.
+11. ADDITIONAL INFO: Extract any background stories, context, relevance, or non-instructional information the user provides about the dish into the "additionalInfo" field. If none, leave as an empty string.`;
 
 /**
  * Structure a raw transcript into a recipe JSON using GPT-4o-mini.

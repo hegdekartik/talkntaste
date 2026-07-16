@@ -242,6 +242,7 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
         tags,
         audio_path: finalAudioPath || null,
         author_name: authorName || null,
+        additional_info: recipe.additionalInfo || null,
       })
       .select('id')
       .single();
@@ -271,7 +272,7 @@ export async function getRecipes() {
 
   const { data, error } = await sb
     .from('recipes')
-    .select('id, title, language, language_name, prep_time, servings, ingredients, steps, transcript, tags, audio_path, author_name, created_at')
+    .select('id, title, language, language_name, prep_time, servings, ingredients, steps, transcript, tags, audio_path, author_name, created_at, additional_info')
     .order('created_at', { ascending: false })
     .limit(50);
 

@@ -733,6 +733,19 @@ function renderRecipe(recipe) {
     libraryActions.style.display = 'flex';
   }
 
+  // Additional Info
+  const additionalInfoText = recipe.additionalInfo || recipe.additional_info;
+  const additionalInfoSection = document.getElementById('additional-info-section');
+  const additionalInfoEl = document.getElementById('recipe-additional-info');
+  
+  if (additionalInfoText) {
+    additionalInfoEl.textContent = additionalInfoText;
+    additionalInfoSection.style.display = 'block';
+  } else {
+    additionalInfoEl.textContent = '';
+    additionalInfoSection.style.display = 'none';
+  }
+
   // Reset edit mode (for add/remove controls)
   setEditMode(false);
 

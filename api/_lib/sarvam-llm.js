@@ -13,6 +13,7 @@ Example: "Tomato chutney maadoke, 3 tomato togondi" -> Output MUST be in Kannada
 4. Break instructions into clear, numbered steps. Each step should be a single distinct cooking action.
 5. Extract ALL ingredients mentioned. Include preparation states in notes where mentioned (e.g., "ಸಣ್ಣಗೆ ಹೆಚ್ಚಿದ" (finely chopped)).
 6. TAGS: Select exactly 3 to 5 tags from this predefined set: vegetarian, non-vegetarian, vegan, south-indian, north-indian, snack, dessert, breakfast, lunch, dinner, quick, under-30-min, slow-cook, rice, bread, curry, chutney, pickle, beverage, salad.
+7. ADDITIONAL INFO: Extract any background stories, context, relevance, or non-instructional information the user provides about the dish into the "additionalInfo" field. If none, leave as an empty string.
 
 Output EXACTLY AND ONLY valid JSON matching this schema, with NO markdown formatting, NO code blocks, and NO additional text:
 {
@@ -27,7 +28,8 @@ Output EXACTLY AND ONLY valid JSON matching this schema, with NO markdown format
   "steps": [
     { "stepNumber": 1, "instruction": "Step instruction in ORIGINAL language" }
   ],
-  "tags": ["tag1", "tag2", "tag3"]
+  "tags": ["tag1", "tag2", "tag3"],
+  "additionalInfo": "Any extra context, stories, or relevance mentioned, or empty string if none"
 }`;
 
 /**
