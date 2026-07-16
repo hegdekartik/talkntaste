@@ -796,6 +796,22 @@ function createIngredientItem(ingredient) {
     syncRecipeFromDOM();
   });
 
+  // Swipe-to-check logic
+  let touchStartX = 0;
+  let touchEndX = 0;
+  
+  li.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+  }, {passive: true});
+  
+  li.addEventListener('touchend', e => {
+    touchEndX = e.changedTouches[0].screenX;
+    if (isEditing) return;
+    if (Math.abs(touchStartX - touchEndX) > 40) {
+      li.classList.toggle('checked');
+    }
+  }, {passive: true});
+
   return li;
 }
 

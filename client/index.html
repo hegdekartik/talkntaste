@@ -13,7 +13,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="./style.css">
 </head>
@@ -192,42 +192,45 @@
         <span id="language-name" class="language-badge__text">Kannada</span>
       </div>
 
-      <!-- Audio Player (hidden by default) -->
-      <div id="audio-player-container" class="audio-player-container" style="display:none;">
-        <audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>
-      </div>
-
-      <!-- Recipe Card -->
-      <article id="recipe-card" class="recipe-card">
-        <!-- Title -->
-        <h2 id="recipe-title" class="recipe-card__title" contenteditable="false"></h2>
-        <div id="recipe-author" class="recipe-card__author"></div>
-
-        <!-- Meta info -->
-        <div class="recipe-card__meta">
-          <span class="recipe-card__meta-item">
-            <span class="recipe-card__meta-icon">⏱️</span>
-            <span id="recipe-prep-time" contenteditable="false"></span>
-          </span>
-          <span class="recipe-card__meta-divider">·</span>
-          <span class="recipe-card__meta-item">
-            <span class="recipe-card__meta-icon">👥</span>
-            <span id="recipe-servings" contenteditable="false"></span>
-          </span>
+      <!-- Recipe Card Bento Grid -->
+      <article id="recipe-card" class="recipe-card bento-grid">
+        
+        <!-- Bento Box: Header & Meta -->
+        <div class="bento-box bento-box--header">
+          <h2 id="recipe-title" class="recipe-card__title" contenteditable="false"></h2>
+          <div id="recipe-author" class="recipe-card__author"></div>
+          
+          <div class="recipe-card__meta">
+            <span class="recipe-card__meta-item">
+              <span class="recipe-card__meta-icon">⏱️</span>
+              <span id="recipe-prep-time" contenteditable="false"></span>
+            </span>
+            <span class="recipe-card__meta-divider">·</span>
+            <span class="recipe-card__meta-item">
+              <span class="recipe-card__meta-icon">👥</span>
+              <span id="recipe-servings" contenteditable="false"></span>
+            </span>
+          </div>
         </div>
 
-        <!-- Ingredients -->
-        <div class="recipe-card__section">
+        <!-- Bento Box: Audio (Initially hidden) -->
+        <div id="audio-player-container" class="bento-box bento-box--audio" style="display:none;">
+          <audio id="recipe-audio" controls style="width:100%; border-radius: 8px; height: 40px;"></audio>
+        </div>
+
+        <!-- Bento Box: Ingredients -->
+        <div class="bento-box bento-box--ingredients recipe-card__section">
           <h3 class="recipe-card__section-title">
             <span>📝</span>
             <span id="ingredients-heading">Ingredients</span>
           </h3>
+          <p class="bento-hint">Swipe left to check off</p>
           <ul id="ingredients-list" class="recipe-card__ingredients"></ul>
           <button id="add-ingredient-btn" class="add-item-btn" style="display:none;">+ Add ingredient</button>
         </div>
 
-        <!-- Steps -->
-        <div class="recipe-card__section">
+        <!-- Bento Box: Steps -->
+        <div class="bento-box bento-box--steps recipe-card__section">
           <h3 class="recipe-card__section-title">
             <span>👨‍🍳</span>
             <span id="steps-heading">Steps</span>
@@ -236,8 +239,8 @@
           <button id="add-step-btn" class="add-item-btn" style="display:none;">+ Add step</button>
         </div>
 
-        <!-- Additional Info -->
-        <div id="additional-info-section" class="recipe-card__section" style="display:none;">
+        <!-- Bento Box: Additional Info -->
+        <div id="additional-info-section" class="bento-box bento-box--story recipe-card__section" style="display:none;">
           <h3 class="recipe-card__section-title">
             <span>📖</span>
             <span id="additional-info-heading">Story & Context</span>
@@ -245,8 +248,8 @@
           <p id="recipe-additional-info" class="recipe-card__story"></p>
         </div>
 
-        <!-- Transcript (Collapsible) -->
-        <details id="transcript-section" class="recipe-card__transcript" style="display:none;">
+        <!-- Bento Box: Transcript -->
+        <details id="transcript-section" class="bento-box bento-box--transcript recipe-card__transcript" style="display:none;">
           <summary class="transcript-summary">
             <span>📄</span>
             <span>View Transcript</span>
