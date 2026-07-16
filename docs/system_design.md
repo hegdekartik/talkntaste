@@ -25,7 +25,53 @@ TalknTaste is a voice-first web application that allows users to speak a recipe 
 
 ---
 
-## 3. End-to-End Logic Flow
+## 3. Architecture Decisions & Explanations
+
+1. **Direct Uploads to Supabase**: Vercel Serverless Functions have a strict 4.5MB payload limit for incoming requests. A 3-minute audio recording easily exceeds this. To solve this, the client requests a signed URL (`/api/upload-url`) and uploads the audio directly to Supabase Storage.
+2. **Polling for Batch Transcription**: Sarvam AI offers a Batch API for longer audio files. Vercel functions time out after 10–60 seconds, which isn't enough to wait for a 3-minute transcription. We return a `jobId` and use client-side polling (`/api/poll`) to circumvent serverless timeouts.
+3. **Streamlined Pipeline**: Previously, the app paused after transcription to ask the user to "Review" the text. This friction was removed. The app now immediately pipes the STT output into the LLM structuring engine. Users can simply "Retry" from the final drafted recipe card if the output is inaccurate.
+4. **LLM Fallback Mechanism**: Sarvam's `105b` model is our primary structurer because it preserves Indian code-mixing natively. However, LLMs can occasionally return malformed JSON. The backend catches JSON parse errors and automatically falls back to OpenAI (`gpt-4o-mini`) to ensure the user always gets a valid recipe card.
+5. **Context Extraction**: The LLM prompt is explicitly designed to extract "additional info" (personal stories, cultural relevance, etc.) from the transcript, preventing non-instructional banter from cluttering the recipe steps while preserving the user's personal touch.
+
+---
+
+## 4. End-to-End Logic Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Client (Vite)
+    participant Vercel API
+    participant Supabase Storage
+    participant Sarvam AI (STT)
+    participant Sarvam / OpenAI (LLM)
+    participant Supabase DB
+
+    User->>Client (Vite): Records Audio (up to 3 min)
+    Client (Vite)->>Vercel API: POST /api/upload-url
+    Vercel API-->>Client (Vite): Signed URL
+    Client (Vite)->>Supabase Storage: PUT Audio Blob
+    
+    Client (Vite)->>Vercel API: POST /api/transcribe (storagePath)
+    Vercel API->>Supabase Storage: Download Audio (/tmp)
+    Vercel API->>Sarvam AI (STT): Transcribe (Sync/Batch)
+    Sarvam AI (STT)-->>Vercel API: Transcript / jobId
+    Vercel API-->>Client (Vite): Transcript (or starts Polling)
+    
+    Client (Vite)->>Vercel API: POST /api/structure (transcript)
+    Vercel API->>Sarvam / OpenAI (LLM): Extract JSON Schema
+    Sarvam / OpenAI (LLM)-->>Vercel API: Structured JSON (Title, Steps, Story)
+    Vercel API-->>Client (Vite): Recipe Card Data
+    
+    Client (Vite)->>User: Displays Editable Draft Recipe Card
+    
+    alt User clicks Publish
+        Client (Vite)->>Vercel API: POST /api/save
+        Vercel API->>Supabase DB: INSERT INTO recipes
+    else User clicks Retry
+        Client (Vite)->>Client (Vite): Reset State
+    end
+```
 
 ### Phase 1: Audio Capture & Upload
 1. User taps the mic on the Record tab.
@@ -41,23 +87,23 @@ TalknTaste is a voice-first web application that allows users to speak a recipe 
    - **Batch Flow (> 30s)**: Sent to Sarvam AI batch processing. Returns a `jobId` and `202 Accepted` to the client.
 4. **Polling**: If batched, the client loops `POST /api/poll` until the transcript is ready, ensuring long processes do not trigger Vercel timeout limits.
 
-### Phase 3: Transcript Review & Structuring
-1. **Review**: The raw transcript is presented to the user. They can retry or proceed.
-2. If proceeding, client sends the transcript to `POST /api/structure`.
-3. `api/_lib/sarvam-llm.js` calls Sarvam's `105b` model. The prompt enforces:
+### Phase 3: Immediate Structuring
+1. **Direct Transition**: Once the transcript is received via polling or sync, the client immediately sends it to `POST /api/structure`.
+2. `api/_lib/sarvam-llm.js` calls Sarvam's `105b` model. The prompt enforces:
    - **Original Language Preservation**: JSON outputs must match the input language (e.g., Kannada audio yields Kannada text).
+   - **Context Extraction**: Stories and relevance are extracted into `additionalInfo`.
    - Inference of missing metadata (prep times, servings).
    - Segregation of ingredients (with quantities) from actionable steps.
-4. **Fallback**: If Sarvam returns invalid JSON, it falls back to `api/_lib/openai.js` (GPT-4o-mini) automatically.
+3. **Fallback**: If Sarvam returns invalid JSON, it falls back to `api/_lib/openai.js` (GPT-4o-mini) automatically.
 
 ### Phase 4: Database & Presentation
 1. Client sends a fire-and-forget `POST /api/save` with the structured recipe.
-2. `api/_lib/supabase.js` auto-generates tags and persists the record to PostgreSQL.
-3. The UI presents the recipe on a Vibrant block card. Users can edit text inline or easily share to WhatsApp and Twitter via deep-linking.
+2. `api/_lib/supabase.js` auto-generates tags and persists the record to PostgreSQL (including the `additional_info` field).
+3. The UI presents the recipe on a Vibrant block card. Users can edit text inline, view their personal story/context, or easily share to WhatsApp and Twitter.
 
 ---
 
-## 4. API Endpoints
+## 5. API Endpoints
 
 - **`POST /api/upload-url`**: Generates a signed Supabase Storage URL.
 - **`POST /api/process`**: Downloads audio, initiates Sarvam transcription, handles Sync vs Batch routing.

@@ -42,13 +42,13 @@ The MVP validates three core hypotheses:
 #### Processing
 - **Short audio (≤ ~30s):** Synchronous transcription with near-instant results
 - **Longer audio (30s–3min):** Asynchronous batch transcription with polling, with live progress shown in UI
-- **AI structuring:** Raw transcript is parsed into a structured recipe object with title, prep time, servings, ingredients list, step-by-step instructions, and categorical tags
+- **AI structuring:** Raw transcript is parsed into a structured recipe object with title, prep time, servings, ingredients list, step-by-step instructions, categorical tags, and **Story & Context** extraction
 - **Language preserved:** The recipe card retains the language the cook spoke in
 
 #### Review & Edit
 - **Editable recipe card:** Users can inline-edit any field (title, ingredient, step) before publishing
 - **Audio playback:** The original recording is attached to every recipe card
-- **Raw transcript view:** Users can view the verbatim transcription alongside the structured card
+- **Raw transcript view:** Users can view the verbatim transcription inside a collapsible section on the recipe card
 
 #### Sharing & Publishing
 - **One-tap WhatsApp sharing** with emoji-formatted text optimized for mobile reading
@@ -97,12 +97,12 @@ The following are **not** part of MVP and have been intentionally excluded to ma
   Processing Screen
   ├── Step 1: Audio uploaded to cloud storage
   ├── Step 2: Transcription (sync or async batch)
-  └── Step 3: AI structures transcript into recipe JSON
+  └── Step 3: AI directly structures transcript into recipe JSON
           │
           ▼
   Recipe Card (Draft)
-  ├── Review title, prep time, servings, ingredients, steps, tags
-  ├── Play back your original audio
+  ├── Review title, prep time, servings, ingredients, steps, tags, and story
+  ├── Play back your original audio or view raw transcript
   ├── Edit any field inline
   ├── Discard / Retry
   └── Publish

@@ -11,6 +11,7 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 - **🗣️ Indian Language Support** — Kannada, Hindi, Tamil, Telugu, Malayalam, Marathi, Bengali, Gujarati, Punjabi, English, and more.
 - **🔤 Language Preservation** — Your recipe stays in the language you spoke it in.
 - **📝 Structured Output** — AI extracts title, servings, prep time, ingredients, and numbered steps.
+- **📖 Context & Story Extraction** — Personal anecdotes and cultural relevance shared during the recording are smartly extracted into a dedicated "Story & Context" section.
 - **✏️ Inline Editing** — Tap to edit any field directly on the recipe card.
 - **📱 Sharing** — One-tap share with emoji-rich formatting for WhatsApp or Twitter.
 - **📚 Recipe Library** — Automatically saves your structured recipes to a database with a beautiful vibrant, block-based UI.
@@ -105,9 +106,9 @@ The project is fully configured to deploy to Vercel as a single app.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/api/upload-url` | Generates a signed Supabase URL for direct client audio uploads |
-| `POST` | `/api/process` | Handles audio processing, triggers Sarvam AI transcription |
+| `POST` | `/api/transcribe` | Handles audio processing, triggers Sarvam AI transcription |
 | `POST` | `/api/poll` | Polls Sarvam AI for long-audio batch transcription results |
-| `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes via Sarvam LLM |
+| `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes (including context) via Sarvam LLM |
 | `POST` | `/api/save` | Saves the structured recipe to Supabase PostgreSQL |
 | `GET`  | `/api/recipes` | Fetches the user's recipe library from Supabase |
 
