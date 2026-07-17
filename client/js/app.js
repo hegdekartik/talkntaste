@@ -623,63 +623,67 @@ async function processRecording(audioBlob, knownDuration = null, languageHint = 
 }
 
 // Wire up Transcript Review actions
-reviewRetryBtn.addEventListener('click', () => {
-  setState('idle');
-});
+if (reviewRetryBtn) {
+  reviewRetryBtn.addEventListener('click', () => {
+    setState('idle');
+  });
+}
 
-reviewProceedBtn.addEventListener('click', async () => {
-  if (!pendingTranscriptionData) return;
+if (reviewProceedBtn) {
+  reviewProceedBtn.addEventListener('click', async () => {
+    if (!pendingTranscriptionData) return;
 
-  setState('processing');
-  
-  // Mark transcription as done, activate structuring
-  stepTranscribe.classList.remove('active');
-  stepTranscribe.classList.add('done');
-  stepStructure.classList.add('active');
-
-  // Show transcript preview in processing view
-  transcriptText.textContent = pendingTranscriptionData.transcript;
-  transcriptPreview.classList.add('visible');
-
-  try {
-    const data = pendingTranscriptionData;
-    const structureRes = await structureRecipe(data.transcript, data.detectedLanguage || data.language);
-
-    // Mark structuring as done
-    stepStructure.classList.remove('active');
-    stepStructure.classList.add('done');
-
-    // Short delay for visual feedback before showing result
-    await new Promise(resolve => setTimeout(resolve, 600));
-
-    // Render the recipe as a draft (not yet saved)
-    currentRecipe = structureRes.recipe;
-    isDraft = true;
-    draftMeta = {
-      transcript: data.transcript,
-      language: data.detectedLanguage || data.language,
-      audioPath: data.audioPath,
-      originalName: data.originalName,
-      authorName: pendingAuthorName,
-    };
-    renderRecipe(currentRecipe);
+    setState('processing');
     
-    // Display local audio for draft
-    const localAudioUrl = URL.createObjectURL(pendingAudioBlob);
-    audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
-    document.getElementById('recipe-audio').src = localAudioUrl;
-    audioPlayerContainer.style.display = 'block';
+    // Mark transcription as done, activate structuring
+    stepTranscribe.classList.remove('active');
+    stepTranscribe.classList.add('done');
+    stepStructure.classList.add('active');
 
-    // Hide back-to-library button (draft context)
-    if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
+    // Show transcript preview in processing view
+    transcriptText.textContent = pendingTranscriptionData.transcript;
+    transcriptPreview.classList.add('visible');
 
-    setState('result');
+    try {
+      const data = pendingTranscriptionData;
+      const structureRes = await structureRecipe(data.transcript, data.detectedLanguage || data.language);
 
-  } catch (error) {
-    console.error('Structuring error:', error);
-    showError(error.message || 'Something went wrong during structuring. Please try again.');
-  }
-});
+      // Mark structuring as done
+      stepStructure.classList.remove('active');
+      stepStructure.classList.add('done');
+
+      // Short delay for visual feedback before showing result
+      await new Promise(resolve => setTimeout(resolve, 600));
+
+      // Render the recipe as a draft (not yet saved)
+      currentRecipe = structureRes.recipe;
+      isDraft = true;
+      draftMeta = {
+        transcript: data.transcript,
+        language: data.detectedLanguage || data.language,
+        audioPath: data.audioPath,
+        originalName: data.originalName,
+        authorName: pendingAuthorName,
+      };
+      renderRecipe(currentRecipe);
+      
+      // Display local audio for draft
+      const localAudioUrl = URL.createObjectURL(pendingAudioBlob);
+      audioPlayerContainer.innerHTML = '<audio id="recipe-audio" controls style="width:100%; border-radius: 8px;"></audio>';
+      document.getElementById('recipe-audio').src = localAudioUrl;
+      audioPlayerContainer.style.display = 'block';
+
+      // Hide back-to-library button (draft context)
+      if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
+
+      setState('result');
+
+    } catch (error) {
+      console.error('Structuring error:', error);
+      showError(error.message || 'Something went wrong during structuring. Please try again.');
+    }
+  });
+}
 
 
 function resetProcessingView() {
