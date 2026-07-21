@@ -110,4 +110,6 @@ sequenceDiagram
 - **`POST /api/poll`**: Checks Sarvam job status and fetches completed transcripts.
 - **`POST /api/structure`**: Maps transcript to JSON via Sarvam LLM (with OpenAI fallback).
 - **`POST /api/save`**: Saves to Supabase PostgreSQL.
+- **`POST /api/update`**: Updates an existing recipe record (title, prep time, servings, ingredients, steps, tags) in Supabase PostgreSQL.
 - **`GET /api/recipes`**: Retrieves the user's saved recipes for the Library tab.
+

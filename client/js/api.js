@@ -248,6 +248,29 @@ export async function saveRecipeToServer({ recipe, transcript, language, audioPa
   return response.json();
 }
 
+/**
+ * Update an existing recipe in the database.
+ *
+ * @param {string} id - Recipe ID
+ * @param {object} recipe - Recipe object
+ * @returns {Promise<{ success: boolean, recipeId: string }>}
+ */
+export async function updateRecipeOnServer(id, recipe) {
+  const response = await fetch(`${API_BASE}/update`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id, recipe }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Failed to update recipe: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+
 /** Map mime types to file extensions */
 function getExtension(mimeType) {
   const map = {

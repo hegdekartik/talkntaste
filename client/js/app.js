@@ -5,7 +5,7 @@
  */
 
 import { AudioRecorder, formatTime } from './recorder.js';
-import { processAudio, fetchRecipes, wakeUpBackend, saveRecipeToServer } from './api.js';
+import { processAudio, fetchRecipes, wakeUpBackend, saveRecipeToServer, updateRecipeOnServer } from './api.js';
 import { shareWhatsApp, shareTwitter, copyToClipboard } from './share.js';
 
 // Wake up backend immediately to avoid cold start delays
@@ -271,6 +271,7 @@ backToRecordBtn.addEventListener('click', () => {
 // Back to library from result view
 if (backToLibraryBtn) {
   backToLibraryBtn.addEventListener('click', () => {
+    if (isEditing) setEditMode(false);
     setState('database');
   });
 }
@@ -471,6 +472,7 @@ function pickFoodEmoji(recipe) {
 
 function handleCardTap(recipe) {
   currentRecipe = {
+    id: recipe.id,
     title: recipe.title,
     prepTime: recipe.prep_time,
     servings: recipe.servings,
@@ -737,14 +739,6 @@ function renderRecipe(recipe) {
     stepsList.appendChild(createStepItem(step));
   }
 
-  // Enable inline text editing by default on steps and ingredients
-  ingredientsList.querySelectorAll('.ingredient-item__text').forEach(el => {
-    el.contentEditable = 'true';
-  });
-  stepsList.querySelectorAll('.step-item__text').forEach(el => {
-    el.contentEditable = 'true';
-  });
-
   // Show contextual action bar
   if (isDraft) {
     draftActions.style.display = 'flex';
@@ -785,7 +779,7 @@ function createIngredientItem(ingredient) {
   const li = document.createElement('li');
   li.className = 'ingredient-item';
 
-  let text = `${ingredient.quantity} ${ingredient.name}`;
+  let text = `${ingredient.quantity} ${ingredient.name}`.trim();
   if (ingredient.notes) text += ` (${ingredient.notes})`;
 
   li.innerHTML = `
@@ -884,9 +878,10 @@ function setEditMode(editing) {
     editBtn.classList.remove('active');
     editBtn.querySelector('span').textContent = 'Edit';
     syncRecipeFromDOM();
+    handleRecipeEditSaved();
   }
 
-  // Toggle contenteditable on all fields
+  // Toggle contenteditable on all header fields
   const editableFields = [
     recipeTitle,
     recipePrepTime,
@@ -897,6 +892,14 @@ function setEditMode(editing) {
     el.contentEditable = editing ? 'true' : 'false';
   }
 
+  // Toggle contenteditable on ingredients and steps
+  ingredientsList.querySelectorAll('.ingredient-item__text').forEach(el => {
+    el.contentEditable = editing ? 'true' : 'false';
+  });
+  stepsList.querySelectorAll('.step-item__text').forEach(el => {
+    el.contentEditable = editing ? 'true' : 'false';
+  });
+
   // Show/hide add buttons and step controls
   addIngredientBtn.style.display = editing ? 'block' : 'none';
   addStepBtn.style.display = editing ? 'block' : 'none';
@@ -906,6 +909,37 @@ function setEditMode(editing) {
   stepControls.forEach(c => c.style.display = editing ? 'flex' : 'none');
   const removeButtons = ingredientsList.querySelectorAll('.ingredient-item__remove');
   removeButtons.forEach(b => b.style.display = editing ? 'flex' : 'none');
+}
+
+async function handleRecipeEditSaved() {
+  if (!currentRecipe) return;
+
+  if (currentRecipe.id) {
+    try {
+      await updateRecipeOnServer(currentRecipe.id, currentRecipe);
+      showToast('Recipe updated! ✏️');
+    } catch (err) {
+      console.error('[App] Failed to update recipe on server:', err);
+      showToast('Could not save changes to server.');
+    }
+
+    // Update local cache of database recipes
+    const idx = currentDatabaseRecipes.findIndex(r => r.id === currentRecipe.id);
+    if (idx !== -1) {
+      currentDatabaseRecipes[idx] = {
+        ...currentDatabaseRecipes[idx],
+        title: currentRecipe.title,
+        prep_time: currentRecipe.prepTime,
+        servings: currentRecipe.servings,
+        ingredients: currentRecipe.ingredients,
+        steps: currentRecipe.steps,
+      };
+    }
+
+    // Re-render filtered cards on recipe tab / database view
+    const activeChip = filterChipsContainer?.querySelector('.filter-chip.active');
+    applyFilter(activeFilter, activeChip);
+  }
 }
 
 function syncRecipeFromDOM() {
@@ -1168,7 +1202,7 @@ publishBtn.addEventListener('click', async () => {
   publishBtn.querySelector('span').textContent = 'Publishing…';
 
   try {
-    await saveRecipeToServer({
+    const res = await saveRecipeToServer({
       recipe: currentRecipe,
       transcript: draftMeta.transcript,
       language: draftMeta.language,
@@ -1176,8 +1210,32 @@ publishBtn.addEventListener('click', async () => {
       originalName: draftMeta.originalName,
       authorName: draftMeta.authorName,
     });
+
+    if (res && res.recipeId) {
+      currentRecipe.id = res.recipeId;
+    }
+
     showToast('Recipe published! 🎉');
     isDraft = false;
+
+    // Insert newly published recipe to local database recipes list
+    const newDbRecipe = {
+      id: currentRecipe.id,
+      title: currentRecipe.title,
+      prep_time: currentRecipe.prepTime,
+      servings: currentRecipe.servings,
+      ingredients: currentRecipe.ingredients,
+      steps: currentRecipe.steps,
+      language: draftMeta.language,
+      language_name: currentRecipe.languageName,
+      author_name: draftMeta.authorName,
+      transcript: draftMeta.transcript,
+      audio_path: draftMeta.audioPath,
+    };
+    currentDatabaseRecipes.unshift(newDbRecipe);
+    const activeChip = filterChipsContainer?.querySelector('.filter-chip.active');
+    applyFilter(activeFilter, activeChip);
+
     draftMeta = null;
     // Switch to library actions
     draftActions.style.display = 'none';

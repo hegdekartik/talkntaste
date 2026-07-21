@@ -9,6 +9,7 @@ import processHandler from './process.js';
 import pollHandler from './poll.js';
 import structureHandler from './structure.js';
 import saveHandler from './save.js';
+import updateHandler from './update.js';
 import recipesHandler from './recipes.js';
 
 const app = express();
@@ -61,6 +62,9 @@ app.post('/api/process', processHandler);
 app.post('/api/poll', pollHandler);
 app.post('/api/structure', structureHandler);
 app.post('/api/save', saveHandler);
+app.post('/api/update', updateHandler);
+app.put('/api/recipes', updateHandler);
+
 
 // ---------------------------------------------------------------------------
 // Start

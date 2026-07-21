@@ -261,6 +261,64 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
 }
 
 /**
+ * Update an existing recipe in Supabase.
+ *
+ * @param {string} id - Recipe UUID
+ * @param {object} params
+ * @param {object} params.recipe - Updated structured recipe object
+ * @returns {Promise<boolean>} Success status
+ */
+export async function updateRecipe(id, { recipe }) {
+  const sb = getSupabase();
+  if (!sb) {
+    console.warn('[Supabase] Client not initialized — skipping update');
+    return false;
+  }
+
+  if (!id) {
+    throw new Error('Recipe ID is required for update');
+  }
+
+  try {
+    // Regenerate tags based on updated recipe content
+    const tags = (recipe.tags && recipe.tags.length > 0)
+      ? recipe.tags
+      : generateTags(recipe, recipe.transcript || '');
+
+    let servings = recipe.servings;
+    if (servings !== null && servings !== undefined) {
+      servings = parseInt(servings, 10);
+      if (isNaN(servings)) servings = null;
+    }
+
+    const { error } = await sb
+      .from('recipes')
+      .update({
+        title: recipe.title || 'Untitled Recipe',
+        servings: servings || null,
+        prep_time: recipe.prepTime || null,
+        ingredients: recipe.ingredients || [],
+        steps: recipe.steps || [],
+        tags,
+        additional_info: recipe.additionalInfo || recipe.additional_info || null,
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error('[Supabase] Update error:', error.message);
+      throw new Error(error.message);
+    }
+
+    console.log(`[Supabase] Recipe updated: ${id}`);
+    return true;
+  } catch (err) {
+    console.error('[Supabase] Update failed:', err.message);
+    throw err;
+  }
+}
+
+
+/**
  * Fetch recent recipes from the database.
  * @returns {Promise<Array>} Array of recipe objects
  */
