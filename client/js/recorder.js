@@ -47,13 +47,12 @@ export class AudioRecorder {
 
       // Determine supported mime type
       const mimeType = this._getSupportedMimeType();
+      const options = { audioBitsPerSecond: 128000 };
+      if (mimeType) options.mimeType = mimeType;
 
       // Start recording
       this.chunks = [];
-      this.mediaRecorder = new MediaRecorder(this.stream, {
-        mimeType,
-        audioBitsPerSecond: 128000,
-      });
+      this.mediaRecorder = new MediaRecorder(this.stream, options);
 
       this.mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
@@ -187,9 +186,12 @@ export class AudioRecorder {
       'audio/webm',
       'audio/ogg;codecs=opus',
       'audio/mp4',
+      'audio/aac',
     ];
     for (const type of types) {
-      if (MediaRecorder.isTypeSupported(type)) return type;
+      if (typeof MediaRecorder !== 'undefined' && typeof MediaRecorder.isTypeSupported === 'function' && MediaRecorder.isTypeSupported(type)) {
+        return type;
+      }
     }
     return ''; // Let browser pick default
   }

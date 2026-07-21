@@ -143,9 +143,11 @@ ul, ol {
 /* ---- Header ---- */
 .header {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 1rem 1rem 0.5rem;
+  gap: 0.35rem;
+  padding: 1rem 1rem 0.25rem;
   width: 100%;
 }
 
@@ -168,6 +170,34 @@ ul, ol {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: -0.02em;
+}
+
+.header__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  border: 1px solid rgba(232, 93, 4, 0.2);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--spice-saffron);
+  letter-spacing: 0.02em;
+}
+
+.header__badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--spice-saffron);
+  box-shadow: 0 0 8px var(--spice-saffron);
+  animation: pulseDot 2s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.8); }
 }
 
 

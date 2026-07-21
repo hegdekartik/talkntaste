@@ -424,6 +424,12 @@ function renderFilteredCards(recipes) {
     // Store recipe data on the card element for tap handling
     card.recipeData = recipe;
     card.addEventListener('click', () => handleCardTap(recipe));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleCardTap(recipe);
+      }
+    });
     
     cards.push(card);
     recipeCarousel.appendChild(card);
@@ -531,8 +537,12 @@ async function getAudioDuration(blob) {
 async function handleFileUpload(file) {
   if (!file) return;
 
-  if (!file.type.startsWith('audio/') && !file.name.match(/\.(mp3|wav|webm|m4a|ogg|flac)$/i)) {
-    showToast('Please upload an audio file (.mp3, .wav, etc.)');
+  const isImageOrVideo = file.type.startsWith('image/') || file.type.startsWith('video/');
+  const isAudioExt = file.name.match(/\.(mp3|wav|webm|m4a|ogg|flac|aac|opus)$/i);
+  const isAudioMime = file.type.startsWith('audio/');
+
+  if (isImageOrVideo || (!isAudioMime && !isAudioExt)) {
+    showToast('Please select an audio file (MP3, WAV, M4A, WEBM, OGG, FLAC)');
     return;
   }
 
@@ -794,6 +804,13 @@ function createIngredientItem(ingredient) {
     syncRecipeFromDOM();
   });
 
+  // Click-to-check logic
+  li.addEventListener('click', (e) => {
+    if (isEditing) return;
+    if (e.target.closest('.ingredient-item__remove')) return;
+    li.classList.toggle('checked');
+  });
+
   // Swipe-to-check logic
   let touchStartX = 0;
   let touchEndX = 0;
@@ -962,6 +979,12 @@ function syncRecipeFromDOM() {
   for (const li of stepsList.querySelectorAll('.step-item')) {
     const text = li.querySelector('.step-item__text').textContent.trim();
     currentRecipe.steps.push({ stepNumber: stepNum++, instruction: text });
+  }
+
+  // Sync additional info / story
+  const additionalInfoEl = document.getElementById('recipe-additional-info');
+  if (additionalInfoEl) {
+    currentRecipe.additionalInfo = additionalInfoEl.textContent.trim();
   }
 }
 
@@ -1233,8 +1256,7 @@ publishBtn.addEventListener('click', async () => {
       audio_path: draftMeta.audioPath,
     };
     currentDatabaseRecipes.unshift(newDbRecipe);
-    const activeChip = filterChipsContainer?.querySelector('.filter-chip.active');
-    applyFilter(activeFilter, activeChip);
+    renderDatabase(currentDatabaseRecipes);
 
     draftMeta = null;
     // Switch to library actions

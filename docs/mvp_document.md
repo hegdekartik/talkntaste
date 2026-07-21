@@ -42,7 +42,7 @@ The MVP validates three core hypotheses:
 #### Processing
 - **Short audio (≤ ~30s):** Synchronous transcription with near-instant results
 - **Longer audio (30s–3min):** Asynchronous batch transcription with polling, with live progress shown in UI
-- **AI structuring:** Raw transcript is parsed into a structured recipe object with title, prep time, servings, ingredients list, step-by-step instructions, categorical tags, and **Story & Context** extraction
+- **AI structuring:** Raw transcript is parsed via Sarvam-105b LLM (with GPT-4o-mini fallback) into a structured recipe object with title, prep time, servings, ingredients list, step-by-step instructions, categorical tags, and **Story & Context** extraction
 - **Language preserved:** The recipe card retains the language the cook spoke in
 
 #### Review & Edit
@@ -75,7 +75,6 @@ The following are **not** part of MVP and have been intentionally excluded to ma
 | User accounts / authentication | Adds significant complexity; anonymous publishing is sufficient to validate community hypothesis |
 | Recipe image upload by user | Users unlikely to upload consistently; emoji thumbnails solve the visual need adequately for MVP |
 | Recipe search (full-text) | Filtering by language/tag is sufficient at this user volume; search adds infra complexity |
-| Recipe edit after publishing | Adds a mutability concern; MVP assumes publish = done |
 | Notifications / follows / likes | Social graph features are post-PMF |
 | Native mobile app (iOS/Android) | Progressive Web App (PWA) on mobile browser is sufficient for initial distribution |
 | Offline mode | Requires service worker complexity; deferred |

@@ -271,8 +271,7 @@ export async function saveRecipe({ recipe, transcript, language, audioFilePath, 
 export async function updateRecipe(id, { recipe }) {
   const sb = getSupabase();
   if (!sb) {
-    console.warn('[Supabase] Client not initialized — skipping update');
-    return false;
+    throw new Error('Supabase client not initialized — missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
   }
 
   if (!id) {

@@ -35,10 +35,13 @@ export async function processAudio(audioBlob, callbacks = {}, authorName = null,
   });
 
   if (!uploadUrlRes.ok) {
-    throw new Error('Network error: Could not get upload URL from server.');
+    const error = await uploadUrlRes.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Network error: Could not get upload URL (${uploadUrlRes.status}).`);
   }
 
-  const { uploadUrl, storagePath } = await uploadUrlRes.json();
+  const { uploadUrl, storagePath } = await uploadUrlRes.json().catch(() => {
+    throw new Error('Invalid server response when requesting upload URL.');
+  });
 
   // Step 2: Direct Upload to Supabase Storage
   try {
@@ -139,10 +142,13 @@ export async function transcribeAudio(audioBlob, languageHint = '') {
   });
 
   if (!uploadUrlRes.ok) {
-    throw new Error('Network error: Could not get upload URL from server.');
+    const error = await uploadUrlRes.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Network error: Could not get upload URL (${uploadUrlRes.status}).`);
   }
 
-  const { uploadUrl, storagePath } = await uploadUrlRes.json();
+  const { uploadUrl, storagePath } = await uploadUrlRes.json().catch(() => {
+    throw new Error('Invalid server response when requesting upload URL.');
+  });
 
   // Step 2: Direct Upload to Supabase Storage
   try {
