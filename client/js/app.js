@@ -114,6 +114,46 @@ if (languageSelect) {
   });
 }
 
+// ============================================================
+// Theme Toggle (system-default, manual override)
+// ============================================================
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+
+function applyTheme(theme) {
+  if (theme === 'dark' || theme === 'light') {
+    document.documentElement.setAttribute('data-theme', theme);
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+
+// On load: restore manual preference or respect system
+const savedTheme = localStorage.getItem('talkntaste_theme');
+if (savedTheme === 'dark' || savedTheme === 'light') {
+  applyTheme(savedTheme);
+}
+
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    // Determine effective current mode
+    const isDark = currentTheme === 'dark' || (!currentTheme && systemDark);
+    const next = isDark ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem('talkntaste_theme', next);
+  });
+}
+
+// Listen for system theme changes and auto-apply if user hasn't overridden
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+  const manual = localStorage.getItem('talkntaste_theme');
+  if (!manual) {
+    document.documentElement.removeAttribute('data-theme');
+  }
+});
+
+
 let currentState = 'idle';
 let recorder = null;
 let currentRecipe = null;
@@ -241,19 +281,21 @@ let totalRecipes = 0;
 
 navLibraryBtn.addEventListener('click', async () => {
   if (currentState === 'database') return;
-  setState('processing');
-  stepTranscribeLabel.textContent = 'Fetching library...';
-  stepTranscribe.classList.add('active');
-  stepStructure.classList.remove('active', 'done');
-  
+
+  // Show database view immediately with skeleton cards
+  setState('database');
+  showSkeletonCards(4);
+
   try {
     const recipes = await fetchRecipes();
     renderDatabase(recipes);
-    setState('database');
   } catch (error) {
-    showError(error.message || 'Failed to load recipes');
+    recipeCarousel.innerHTML = `<p style="color:var(--text-dim); text-align:center; padding: 2rem 1rem;">
+      Couldn't load recipes. Check your connection and try again.
+    </p>`;
   }
 });
+
 
 navRecordBtn.addEventListener('click', () => {
   if (currentState === 'idle') return;
@@ -358,6 +400,15 @@ function applyFilter(filterTag, activeBtn) {
   }
   
   renderFilteredCards(filteredRecipes);
+}
+
+function showSkeletonCards(count = 4) {
+  recipeCarousel.innerHTML = '';
+  for (let i = 0; i < count; i++) {
+    const skel = document.createElement('div');
+    skel.className = 'rmc-skeleton';
+    recipeCarousel.appendChild(skel);
+  }
 }
 
 function renderFilteredCards(recipes) {
@@ -793,7 +844,7 @@ function createIngredientItem(ingredient) {
   if (ingredient.notes) text += ` (${ingredient.notes})`;
 
   li.innerHTML = `
-    <span class="ingredient-item__bullet">▸</span>
+    <span class="ingredient-item__bullet" aria-hidden="true">✓</span>
     <span class="ingredient-item__text" contenteditable="false">${escapeHtml(text)}</span>
     <button class="ingredient-item__remove" aria-label="Remove ingredient">×</button>
   `;
