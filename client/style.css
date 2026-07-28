@@ -429,15 +429,18 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   align-items: center;
   justify-content: center;
   position: relative;
-  min-height: 280px;
+  min-height: 320px;
   gap: 0;
 }
 
-/* Concentric ambient rings */
+/* Concentric ambient rings — centered on mic button */
 .mic-rings {
   position: absolute;
-  width: 270px;
-  height: 270px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 330px;
+  height: 330px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -449,9 +452,9 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   border: 1.5px solid var(--ember-glow);
   animation: ringPulse 3.5s ease-in-out infinite;
 }
-.mic-ring:nth-child(1) { width: 165px; height: 165px; animation-delay: 0s; }
-.mic-ring:nth-child(2) { width: 215px; height: 215px; animation-delay: 0.7s; opacity: 0.6; }
-.mic-ring:nth-child(3) { width: 268px; height: 268px; animation-delay: 1.4s; opacity: 0.3; }
+.mic-ring:nth-child(1) { width: 170px; height: 170px; animation-delay: 0s; }
+.mic-ring:nth-child(2) { width: 230px; height: 230px; animation-delay: 0.7s; opacity: 0.6; }
+.mic-ring:nth-child(3) { width: 330px; height: 330px; animation-delay: 1.4s; opacity: 0.25; }
 @keyframes ringPulse {
   0%, 100% { opacity: 0.5; transform: scale(1); }
   50%       { opacity: 0.08; transform: scale(1.04); }
@@ -465,8 +468,11 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
 /* ---- Waveform ---- */
 .waveform-canvas {
   position: absolute;
-  width: 268px;
-  height: 268px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 280px;
   opacity: 0;
   transition: opacity var(--duration-normal) var(--ease-out);
   pointer-events: none;
@@ -476,8 +482,8 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
 
 /* ---- Mic Button ---- */
 .mic-btn {
-  width: 120px;
-  height: 120px;
+  width: 130px;
+  height: 130px;
   border-radius: 50%;
   aspect-ratio: 1;
   flex-shrink: 0;
@@ -497,13 +503,13 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   animation: idleGlow 3s ease-in-out infinite;
 }
 @keyframes idleGlow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--ember-glow), 0 4px 16px rgba(0,0,0,0.06); }
-  50%       { box-shadow: 0 0 0 14px var(--ember-glow), 0 4px 16px rgba(0,0,0,0.06); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--ember-glow), 0 6px 20px rgba(0,0,0,0.06); }
+  50%       { box-shadow: 0 0 0 18px var(--ember-glow), 0 6px 20px rgba(0,0,0,0.06); }
 }
 .mic-btn:active { transform: scale(0.92); }
 .mic-btn:hover  { transform: scale(1.03); }
-.mic-btn__icon      { width: 42px; height: 42px; }
-.mic-btn__stop-icon { width: 30px; height: 30px; display: none; }
+.mic-btn__icon      { width: 46px; height: 46px; }
+.mic-btn__stop-icon { width: 32px; height: 32px; display: none; }
 
 [data-state="recording"] .mic-btn {
   background: var(--flame);
@@ -513,8 +519,8 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
 [data-state="recording"] .mic-btn__icon      { display: none; }
 [data-state="recording"] .mic-btn__stop-icon { display: block; }
 @keyframes recordingGlow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--flame-glow), 0 4px 16px rgba(0,0,0,0.08); }
-  50%       { box-shadow: 0 0 0 20px var(--flame-glow), 0 4px 16px rgba(0,0,0,0.08); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--flame-glow), 0 6px 20px rgba(0,0,0,0.08); }
+  50%       { box-shadow: 0 0 0 24px var(--flame-glow), 0 6px 20px rgba(0,0,0,0.08); }
 }
 
 
@@ -1614,8 +1620,9 @@ html[data-theme="dark"] audio { filter: invert(88%) hue-rotate(180deg); opacity:
     padding: var(--space-lg) var(--space-xl);
     padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
   }
-  .mic-btn { width: 150px; height: 150px; }
-  .mic-btn__icon { width: 50px; height: 50px; }
+  .mic-btn { width: 160px; height: 160px; }
+  .mic-btn__icon { width: 54px; height: 54px; }
+  .mic-btn__stop-icon { width: 38px; height: 38px; }
   .recipe-card__title { font-size: 1.7rem; }
 }
 
