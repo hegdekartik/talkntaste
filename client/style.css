@@ -74,15 +74,15 @@
 /* ---- Dark Mode via system preference ---- */
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg-deep:          #0E0D0C;
-    --bg-surface:       #1C1A19;
-    --bg-surface-raised:#262423;
-    --bg-glass:         rgba(28, 26, 25, 0.82);
-    --border-subtle:    rgba(255, 255, 255, 0.06);
-    --border-glass:     rgba(255, 255, 255, 0.04);
-    --text-bright:      #F0F0EF;
-    --text-dim:         #A8A29E;
-    --text-faint:       #6B6B6B;
+    --bg-deep:          #0B0B0B;
+    --bg-surface:       #161616;
+    --bg-surface-raised:#202020;
+    --bg-glass:         rgba(22, 22, 22, 0.85);
+    --border-subtle:    rgba(255, 255, 255, 0.08);
+    --border-glass:     rgba(255, 255, 255, 0.05);
+    --text-bright:      #F2F2F2;
+    --text-dim:         #A8A8A8;
+    --text-faint:       #6E6E6E;
     --ember:            #14B8A6;
     --ember-deep:       #0D9488;
     --ember-glow:       rgba(20, 184, 166, 0.15);
@@ -114,15 +114,15 @@
 
 /* Manual dark override */
 html[data-theme="dark"] {
-  --bg-deep:          #0E0D0C;
-  --bg-surface:       #1C1A19;
-  --bg-surface-raised:#262423;
-  --bg-glass:         rgba(28, 26, 25, 0.82);
-  --border-subtle:    rgba(255, 255, 255, 0.06);
-  --border-glass:     rgba(255, 255, 255, 0.04);
-  --text-bright:      #F0F0EF;
-  --text-dim:         #A8A29E;
-  --text-faint:       #6B6B6B;
+  --bg-deep:          #0B0B0B;
+  --bg-surface:       #161616;
+  --bg-surface-raised:#202020;
+  --bg-glass:         rgba(22, 22, 22, 0.85);
+  --border-subtle:    rgba(255, 255, 255, 0.08);
+  --border-glass:     rgba(255, 255, 255, 0.05);
+  --text-bright:      #F2F2F2;
+  --text-dim:         #A8A8A8;
+  --text-faint:       #6E6E6E;
   --ember:            #14B8A6;
   --ember-deep:       #0D9488;
   --ember-glow:       rgba(20, 184, 166, 0.15);
@@ -1505,13 +1505,14 @@ details[open] .recipe-section__header--link .transcript-chevron {
 }
 
 .rmc-content {
-  padding: 0.85rem var(--space-md);
+  padding: 1.15rem var(--space-md);
   display: flex;
   flex-direction: column;
   justify-content: center;
   flex: 1;
   min-width: 0;
-  gap: 0.35rem;
+  min-height: 100px;
+  gap: 0.4rem;
 }
 
 .rmc-title {
