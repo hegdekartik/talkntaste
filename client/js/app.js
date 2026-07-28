@@ -1322,7 +1322,7 @@ async function showDemoRecipe() {
 // ============================================================
 function fireConfetti(count = 40) {
   if (!confettiContainer) return;
-  const colors = ['#14B8A6', '#0D9488', '#EF4444', '#4ADE80', '#60A5FA', '#A78BFA', '#F472B6'];
+  const colors = ['#6B6B6B', '#4A4A4A', '#8A8A8A', '#3D3D3D', '#5A5A5A', '#7A7A7A', '#9A9A9A'];
   for (let i = 0; i < count; i++) {
     const piece = document.createElement('div');
     piece.className = 'confetti-piece';

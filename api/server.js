@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 
-// Import existing Vercel-style handlers
 import healthHandler from './health.js';
 import uploadUrlHandler from './upload-url.js';
 import transcribeHandler from './transcribe.js';
@@ -54,6 +53,7 @@ app.use(express.json({ limit: '50mb' }));
 // mount them directly as Express route handlers.
 // ---------------------------------------------------------------------------
 
+app.get('/',           (_req, res) => res.status(200).json({ status: 'ok', service: 'talkntaste-api', timestamp: new Date().toISOString() }));
 app.get('/api/health', healthHandler);
 app.get('/api/recipes', recipesHandler);
 app.post('/api/upload-url', uploadUrlHandler);

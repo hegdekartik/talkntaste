@@ -4,32 +4,32 @@
    Warm amber accents, deep surfaces, atmospheric depth
    ============================================================ */
 
-/* ---- Modern Light Mode Tokens ---- */
+/* ---- Monochrome Light Mode ---- */
 :root {
-  --bg-deep:          #F7F5F3;
+  --bg-deep:          #F5F4F2;
   --bg-surface:       #FFFFFF;
-  --bg-surface-raised:#EDEBE9;
+  --bg-surface-raised:#EBEAE8;
   --bg-glass:         rgba(255, 255, 255, 0.75);
-  --border-subtle:    rgba(0, 0, 0, 0.06);
-  --border-glass:     rgba(0, 0, 0, 0.04);
+  --border-subtle:    rgba(0, 0, 0, 0.08);
+  --border-glass:     rgba(0, 0, 0, 0.05);
 
-  --text-bright:      #1C1917;
-  --text-dim:         #737373;
-  --text-faint:       #A8A29E;
+  --text-bright:      #111111;
+  --text-dim:         #555555;
+  --text-faint:       #888888;
 
-  --ember:            #0D9488;
-  --ember-deep:       #0F766E;
-  --ember-glow:       rgba(13, 148, 136, 0.12);
-  --ember-soft:       rgba(13, 148, 136, 0.06);
-  --flame:            #EF4444;
-  --flame-glow:       rgba(239, 68, 68, 0.15);
-  --sage:             #16A34A;
+  --ember:            #6B6B6B;
+  --ember-deep:       #4A4A4A;
+  --ember-glow:       rgba(0, 0, 0, 0.06);
+  --ember-soft:       rgba(0, 0, 0, 0.03);
+  --flame:            #8A8A8A;
+  --flame-glow:       rgba(0, 0, 0, 0.08);
+  --sage:             #4A4A4A;
   --whatsapp:         #25D366;
 
-  --shadow-sm:        0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.02);
-  --shadow-md:        0 2px 8px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.03);
-  --shadow-lg:        0 8px 24px rgba(0,0,0,0.07), 0 2px 8px rgba(0,0,0,0.03);
-  --shadow-glow:      0 0 16px rgba(217, 119, 6, 0.08);
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.05), 0 1px 1px rgba(0,0,0,0.02);
+  --shadow-md:        0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.03);
+  --shadow-lg:        0 8px 24px rgba(0,0,0,0.09), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-glow:      0 0 16px rgba(0, 0, 0, 0.04);
 
   --font-heading: 'Outfit', 'Mukta', sans-serif;
   --font-body:    'Inter', 'Mukta', sans-serif;
@@ -53,7 +53,6 @@
   --duration-normal: 300ms;
   --duration-slow:   500ms;
 
-  /* Legacy compat aliases */
   --accent:       var(--ember);
   --accent-glow:  var(--ember-glow);
   --accent-soft:  var(--ember-soft);
@@ -65,10 +64,10 @@
   --bg-card:      var(--bg-surface);
   --bg-card-hover:var(--bg-surface-raised);
   --spice-saffron:    var(--ember);
-  --spice-turmeric:   #14B8A6;
-  --spice-cardamom:   #16A34A;
-  --spice-cardamom-light: rgba(22, 163, 74, 0.1);
-  --twitter: #1C1917;
+  --spice-turmeric:   var(--ember);
+  --spice-cardamom:   var(--sage);
+  --spice-cardamom-light: var(--ember-soft);
+  --twitter: #111111;
 }
 
 /* ---- Dark Mode via system preference ---- */
@@ -80,20 +79,20 @@
     --bg-glass:         rgba(22, 22, 22, 0.85);
     --border-subtle:    rgba(255, 255, 255, 0.08);
     --border-glass:     rgba(255, 255, 255, 0.05);
-    --text-bright:      #F2F2F2;
-    --text-dim:         #A8A8A8;
-    --text-faint:       #6E6E6E;
-    --ember:            #14B8A6;
-    --ember-deep:       #0D9488;
-    --ember-glow:       rgba(20, 184, 166, 0.15);
-    --ember-soft:       rgba(20, 184, 166, 0.07);
-    --flame:            #F87171;
-    --flame-glow:       rgba(248, 113, 113, 0.15);
-    --sage:             #4ADE80;
+    --text-bright:      #F5F5F5;
+    --text-dim:         #B0B0B0;
+    --text-faint:       #808080;
+    --ember:            #A0A0A0;
+    --ember-deep:       #CCCCCC;
+    --ember-glow:       rgba(255, 255, 255, 0.06);
+    --ember-soft:       rgba(255, 255, 255, 0.03);
+    --flame:            #A0A0A0;
+    --flame-glow:       rgba(255, 255, 255, 0.06);
+    --sage:             #CCCCCC;
     --shadow-sm:        0 1px 2px rgba(0,0,0,0.3);
     --shadow-md:        0 4px 12px rgba(0,0,0,0.35);
     --shadow-lg:        0 8px 24px rgba(0,0,0,0.4);
-    --shadow-glow:      0 0 20px rgba(245, 158, 11, 0.08);
+    --shadow-glow:      0 0 20px rgba(255, 255, 255, 0.04);
     --bg-primary:   var(--bg-deep);
     --bg-secondary: var(--bg-surface-raised);
     --bg-card:      var(--bg-surface);
@@ -105,10 +104,10 @@
     --danger:       var(--flame);
     --success:      var(--sage);
     --spice-saffron:    var(--ember);
-    --spice-turmeric:   #0D9488;
-    --spice-cardamom:   #4ADE80;
-    --spice-cardamom-light: rgba(74, 222, 128, 0.1);
-    --twitter:      #FAFAF9;
+    --spice-turmeric:   var(--ember);
+    --spice-cardamom:   var(--sage);
+    --spice-cardamom-light: var(--ember-soft);
+    --twitter:      #EEEEEE;
   }
 }
 
@@ -120,20 +119,20 @@ html[data-theme="dark"] {
   --bg-glass:         rgba(22, 22, 22, 0.85);
   --border-subtle:    rgba(255, 255, 255, 0.08);
   --border-glass:     rgba(255, 255, 255, 0.05);
-  --text-bright:      #F2F2F2;
-  --text-dim:         #A8A8A8;
-  --text-faint:       #6E6E6E;
-  --ember:            #14B8A6;
-  --ember-deep:       #0D9488;
-  --ember-glow:       rgba(20, 184, 166, 0.15);
-  --ember-soft:       rgba(20, 184, 166, 0.07);
-  --flame:            #F87171;
-  --flame-glow:       rgba(248, 113, 113, 0.15);
-  --sage:             #4ADE80;
+  --text-bright:      #F5F5F5;
+  --text-dim:         #B0B0B0;
+  --text-faint:       #808080;
+  --ember:            #A0A0A0;
+  --ember-deep:       #CCCCCC;
+  --ember-glow:       rgba(255, 255, 255, 0.06);
+  --ember-soft:       rgba(255, 255, 255, 0.03);
+  --flame:            #A0A0A0;
+  --flame-glow:       rgba(255, 255, 255, 0.06);
+  --sage:             #CCCCCC;
   --shadow-sm:        0 1px 2px rgba(0,0,0,0.3);
   --shadow-md:        0 4px 12px rgba(0,0,0,0.35);
   --shadow-lg:        0 8px 24px rgba(0,0,0,0.4);
-  --shadow-glow:      0 0 20px rgba(245, 158, 11, 0.08);
+  --shadow-glow:      0 0 20px rgba(255, 255, 255, 0.04);
   --bg-primary:   var(--bg-deep);
   --bg-secondary: var(--bg-surface-raised);
   --bg-card:      var(--bg-surface);
@@ -145,34 +144,34 @@ html[data-theme="dark"] {
   --danger:       var(--flame);
   --success:      var(--sage);
   --spice-saffron:    var(--ember);
-  --spice-turmeric:   #0D9488;
-  --spice-cardamom:   #4ADE80;
-  --spice-cardamom-light: rgba(74, 222, 128, 0.1);
-  --twitter:      #FAFAF9;
+  --spice-turmeric:   var(--ember);
+  --spice-cardamom:   var(--sage);
+  --spice-cardamom-light: var(--ember-soft);
+  --twitter:      #EEEEEE;
 }
 
 /* Manual light override */
 html[data-theme="light"] {
-  --bg-deep:          #F7F5F3;
+  --bg-deep:          #F5F4F2;
   --bg-surface:       #FFFFFF;
-  --bg-surface-raised:#EDEBE9;
+  --bg-surface-raised:#EBEAE8;
   --bg-glass:         rgba(255, 255, 255, 0.75);
-  --border-subtle:    rgba(0, 0, 0, 0.06);
-  --border-glass:     rgba(0, 0, 0, 0.04);
-  --text-bright:      #1C1917;
-  --text-dim:         #737373;
-  --text-faint:       #A8A29E;
-  --ember:            #0D9488;
-  --ember-deep:       #0F766E;
-  --ember-glow:       rgba(13, 148, 136, 0.12);
-  --ember-soft:       rgba(13, 148, 136, 0.06);
-  --flame:            #EF4444;
-  --flame-glow:       rgba(239, 68, 68, 0.15);
-  --sage:             #16A34A;
-  --shadow-sm:        0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:        0 4px 12px rgba(0,0,0,0.06);
-  --shadow-lg:        0 8px 24px rgba(0,0,0,0.08);
-  --shadow-glow:      0 0 16px rgba(217, 119, 6, 0.08);
+  --border-subtle:    rgba(0, 0, 0, 0.08);
+  --border-glass:     rgba(0, 0, 0, 0.05);
+  --text-bright:      #111111;
+  --text-dim:         #555555;
+  --text-faint:       #888888;
+  --ember:            #6B6B6B;
+  --ember-deep:       #4A4A4A;
+  --ember-glow:       rgba(0, 0, 0, 0.06);
+  --ember-soft:       rgba(0, 0, 0, 0.03);
+  --flame:            #8A8A8A;
+  --flame-glow:       rgba(0, 0, 0, 0.08);
+  --sage:             #4A4A4A;
+  --shadow-sm:        0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:        0 4px 12px rgba(0,0,0,0.07);
+  --shadow-lg:        0 8px 24px rgba(0,0,0,0.09);
+  --shadow-glow:      0 0 16px rgba(0, 0, 0, 0.04);
   --bg-primary:   var(--bg-deep);
   --bg-secondary: var(--bg-surface-raised);
   --bg-card:      var(--bg-surface);
@@ -184,10 +183,10 @@ html[data-theme="light"] {
   --danger:       var(--flame);
   --success:      var(--sage);
   --spice-saffron:    var(--ember);
-  --spice-turmeric:   #14B8A6;
-  --spice-cardamom:   #16A34A;
-  --spice-cardamom-light: rgba(22, 163, 74, 0.1);
-  --twitter:      #1C1917;
+  --spice-turmeric:   var(--ember);
+  --spice-cardamom:   var(--sage);
+  --spice-cardamom-light: var(--ember-soft);
+  --twitter:      #111111;
 }
 
 
@@ -1057,7 +1056,7 @@ details[open] .recipe-section__header--link .transcript-chevron {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--ember-soft);
   color: var(--flame);
   font-size: 12px;
   display: none;
@@ -1066,7 +1065,7 @@ details[open] .recipe-section__header--link .transcript-chevron {
   transition: background var(--duration-fast);
 }
 [data-state="editing"] .ingredient-item__remove { display: flex; }
-.ingredient-item__remove:hover { background: rgba(239, 68, 68, 0.18); }
+.ingredient-item__remove:hover { background: var(--ember-glow); }
 
 
 /* ---- Steps ---- */
@@ -1140,7 +1139,7 @@ details[open] .recipe-section__header--link .transcript-chevron {
 .step-item__remove {
   width: 20px; height: 20px;
   border-radius: 50%;
-  background: rgba(239, 68, 68, 0.08);
+  background: var(--ember-soft);
   color: var(--flame);
   font-size: 12px;
   display: flex;
@@ -1150,7 +1149,7 @@ details[open] .recipe-section__header--link .transcript-chevron {
   border: none;
   cursor: pointer;
 }
-.step-item__remove:hover { background: rgba(239, 68, 68, 0.18); }
+.step-item__remove:hover { background: var(--ember-glow); }
 
 
 /* ---- Transcript Section ---- */
@@ -1257,9 +1256,9 @@ details[open] .recipe-section__header--link .transcript-chevron {
 .draft-btn--discard {
   background: transparent;
   color: var(--flame);
-  border: 0.5px solid rgba(239, 68, 68, 0.25);
+  border: 0.5px solid var(--border-glass);
 }
-.draft-btn--discard:hover { background: rgba(239, 68, 68, 0.06); }
+.draft-btn--discard:hover { background: var(--ember-soft); }
 .draft-btn--publish {
   background: var(--ember);
   color: #fff;
@@ -1480,28 +1479,29 @@ details[open] .recipe-section__header--link .transcript-chevron {
   width: 100%;
   background: var(--bg-surface);
   border: 0.5px solid var(--border-glass);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   cursor: pointer;
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.03);
   transition: all var(--duration-fast) var(--ease-out);
   outline: none;
   overflow: hidden;
   position: relative;
 }
 .recipe-mini-card:hover {
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.09), 0 2px 6px rgba(0,0,0,0.04);
+  transform: translateY(-1px);
 }
 .recipe-mini-card:active { transform: scale(0.98); }
 .recipe-mini-card:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
 
 .rmc-accent {
-  width: 3px;
+  width: 4px;
   flex-shrink: 0;
   background: var(--ember);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .rmc-content {

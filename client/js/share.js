@@ -39,7 +39,7 @@ export function formatWhatsApp(recipe) {
     text += `${emoji} ${step.instruction}\n`;
   }
 
-  text += `\n✨ Made with TalknTaste`;
+  text += `\n✨ Made with TalknTaste\nhttps://talkntaste.vercel.app`;
 
   return text;
 }
