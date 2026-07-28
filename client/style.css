@@ -17,10 +17,10 @@
   --text-dim:         #737373;
   --text-faint:       #A8A29E;
 
-  --ember:            #D97706;
-  --ember-deep:       #B45309;
-  --ember-glow:       rgba(217, 119, 6, 0.12);
-  --ember-soft:       rgba(217, 119, 6, 0.06);
+  --ember:            #0D9488;
+  --ember-deep:       #0F766E;
+  --ember-glow:       rgba(13, 148, 136, 0.12);
+  --ember-soft:       rgba(13, 148, 136, 0.06);
   --flame:            #EF4444;
   --flame-glow:       rgba(239, 68, 68, 0.15);
   --sage:             #16A34A;
@@ -65,7 +65,7 @@
   --bg-card:      var(--bg-surface);
   --bg-card-hover:var(--bg-surface-raised);
   --spice-saffron:    var(--ember);
-  --spice-turmeric:   #F59E0B;
+  --spice-turmeric:   #14B8A6;
   --spice-cardamom:   #16A34A;
   --spice-cardamom-light: rgba(22, 163, 74, 0.1);
   --twitter: #1C1917;
@@ -83,10 +83,10 @@
     --text-bright:      #F0F0EF;
     --text-dim:         #A8A29E;
     --text-faint:       #6B6B6B;
-    --ember:            #F59E0B;
-    --ember-deep:       #FBBF24;
-    --ember-glow:       rgba(245, 158, 11, 0.15);
-    --ember-soft:       rgba(245, 158, 11, 0.07);
+    --ember:            #14B8A6;
+    --ember-deep:       #0D9488;
+    --ember-glow:       rgba(20, 184, 166, 0.15);
+    --ember-soft:       rgba(20, 184, 166, 0.07);
     --flame:            #F87171;
     --flame-glow:       rgba(248, 113, 113, 0.15);
     --sage:             #4ADE80;
@@ -105,7 +105,7 @@
     --danger:       var(--flame);
     --success:      var(--sage);
     --spice-saffron:    var(--ember);
-    --spice-turmeric:   #FBBF24;
+    --spice-turmeric:   #0D9488;
     --spice-cardamom:   #4ADE80;
     --spice-cardamom-light: rgba(74, 222, 128, 0.1);
     --twitter:      #FAFAF9;
@@ -123,10 +123,10 @@ html[data-theme="dark"] {
   --text-bright:      #F0F0EF;
   --text-dim:         #A8A29E;
   --text-faint:       #6B6B6B;
-  --ember:            #F59E0B;
-  --ember-deep:       #FBBF24;
-  --ember-glow:       rgba(245, 158, 11, 0.15);
-  --ember-soft:       rgba(245, 158, 11, 0.07);
+  --ember:            #14B8A6;
+  --ember-deep:       #0D9488;
+  --ember-glow:       rgba(20, 184, 166, 0.15);
+  --ember-soft:       rgba(20, 184, 166, 0.07);
   --flame:            #F87171;
   --flame-glow:       rgba(248, 113, 113, 0.15);
   --sage:             #4ADE80;
@@ -145,7 +145,7 @@ html[data-theme="dark"] {
   --danger:       var(--flame);
   --success:      var(--sage);
   --spice-saffron:    var(--ember);
-  --spice-turmeric:   #FBBF24;
+  --spice-turmeric:   #0D9488;
   --spice-cardamom:   #4ADE80;
   --spice-cardamom-light: rgba(74, 222, 128, 0.1);
   --twitter:      #FAFAF9;
@@ -162,10 +162,10 @@ html[data-theme="light"] {
   --text-bright:      #1C1917;
   --text-dim:         #737373;
   --text-faint:       #A8A29E;
-  --ember:            #D97706;
-  --ember-deep:       #B45309;
-  --ember-glow:       rgba(217, 119, 6, 0.12);
-  --ember-soft:       rgba(217, 119, 6, 0.06);
+  --ember:            #0D9488;
+  --ember-deep:       #0F766E;
+  --ember-glow:       rgba(13, 148, 136, 0.12);
+  --ember-soft:       rgba(13, 148, 136, 0.06);
   --flame:            #EF4444;
   --flame-glow:       rgba(239, 68, 68, 0.15);
   --sage:             #16A34A;
@@ -184,7 +184,7 @@ html[data-theme="light"] {
   --danger:       var(--flame);
   --success:      var(--sage);
   --spice-saffron:    var(--ember);
-  --spice-turmeric:   #F59E0B;
+  --spice-turmeric:   #14B8A6;
   --spice-cardamom:   #16A34A;
   --spice-cardamom-light: rgba(22, 163, 74, 0.1);
   --twitter:      #1C1917;
@@ -268,32 +268,35 @@ ul, ol { list-style: none; }
 
 /* ---- Header ---- */
 .header {
-  display: flex;
-  flex-direction: row;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 0.5rem 0.25rem 0.375rem;
   width: 100%;
 }
 .header__brand {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.5rem;
+  grid-column: 2;
 }
 .header__icon {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
 }
 .header__title {
   font-family: var(--font-heading);
-  font-size: 1.35rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 650;
   color: var(--text-bright);
   letter-spacing: -0.03em;
 }
 .header__controls {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.375rem;
+  grid-column: 3;
 }
 .header__badge {
   display: inline-flex;
@@ -874,7 +877,7 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   background: var(--bg-surface);
 }
 .bento-box--ingredients { border-left: 3px solid var(--ember); }
-.bento-box--steps       { border-left: 3px solid #F59E0B; }
+.bento-box--steps       { border-left: 3px solid #14B8A6; }
 .bento-box--audio       { border-left: 3px solid var(--sage); }
 
 .bento-hint {
