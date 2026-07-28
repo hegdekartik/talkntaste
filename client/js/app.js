@@ -186,7 +186,7 @@ function setState(newState) {
   currentState = newState;
   
   if (navRecordBtn && navLibraryBtn) {
-    if (newState === 'database') {
+    if (newState === 'database' || ((newState === 'result' || newState === 'editing') && !isDraft)) {
       navRecordBtn.classList.remove('active');
       navLibraryBtn.classList.add('active');
     } else {
@@ -466,28 +466,30 @@ function renderFilteredCards(recipes) {
     const hasAudio = !!(recipe.audio_url || recipe.audio_path);
     let authorStr = '';
     if (recipe.author_name && !recipe.author_name.startsWith('Anon-')) {
-      authorStr = `<p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem;">By ${recipe.author_name}</p>`;
+      authorStr = `<span class="rmc-author">${escapeHtml(recipe.author_name)}</span>`;
     }
     
     // Pick a food emoji based on recipe tags/title
     const recipeEmoji = pickFoodEmoji(recipe);
     
     card.innerHTML = `
-      <div class="rmc-header">
-        <div class="rmc-emoji">${recipeEmoji}</div>
-      </div>
+      <div class="rmc-accent"></div>
       <div class="rmc-content">
-        <h3 class="rmc-title">${recipe.title || 'Untitled'}</h3>
-        ${authorStr}
+        <h3 class="rmc-title"><span class="rmc-emoji">${recipeEmoji}</span> ${escapeHtml(recipe.title || 'Untitled')}</h3>
         <div class="rmc-meta">
-          <span class="rmc-meta-item">⏱️ ${recipe.prep_time || '--'}</span>
-          <span class="rmc-meta-item">👥 ${recipe.servings || '--'}</span>
-          ${hasAudio ? '<span title="Has Audio">🎙️</span>' : ''}
+          ${authorStr}${authorStr ? '<span class="rmc-meta-divider"></span>' : ''}
+          <span class="rmc-meta-item">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><circle cx="8" cy="8" r="6"/><polyline points="8 5 8 8 10 10"/></svg>
+            ${escapeHtml(recipe.prep_time || '—')}
+          </span>
+          <span class="rmc-meta-item">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M10 2H6a1 1 0 0 0-1 1v2h6V3a1 1 0 0 0-1-1z"/><path d="M2 4v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4H2z"/></svg>
+            ${escapeHtml(recipe.servings || '—')}
+          </span>
+          ${hasAudio ? '<span class="rmc-meta-item" title="Has Audio"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 5v6a4 4 0 0 1-8 0V5"/><line x1="8" y1="1" x2="8" y2="5"/></svg></span>' : ''}
         </div>
-        <div class="rmc-tags-wrapper">
-          <div class="rmc-tags">
-            ${tagsHtml}
-          </div>
+        <div class="rmc-tags">
+          ${tagsHtml}
         </div>
       </div>
     `;
@@ -975,6 +977,7 @@ function toggleEditMode() {
 }
 
 function setEditMode(editing) {
+  const wasEditing = isEditing;
   isEditing = editing;
 
   if (editing) {
@@ -985,8 +988,10 @@ function setEditMode(editing) {
     setState('result');
     editBtn.classList.remove('active');
     editBtn.querySelector('span').textContent = 'Edit';
-    syncRecipeFromDOM();
-    handleRecipeEditSaved();
+    if (wasEditing) {
+      syncRecipeFromDOM();
+      handleRecipeEditSaved();
+    }
   }
 
   // Toggle contenteditable on all header fields
