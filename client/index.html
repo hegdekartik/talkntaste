@@ -23,6 +23,39 @@
   <!-- ===== APP CONTAINER ===== -->
   <div id="app" class="app" data-state="idle">
 
+    <!-- ===== ONBOARDING OVERLAY ===== -->
+    <div id="onboarding-overlay" class="onboarding-overlay" role="dialog" aria-modal="true" aria-label="Welcome to TalknTaste">
+      <div class="onboarding-card">
+        <div class="onboarding-steps">
+          <div class="onboarding-step">
+            <div class="onboarding-step__icon">🎤</div>
+            <div class="onboarding-step__content">
+              <h3 class="onboarding-step__title">Speak a recipe</h3>
+              <p class="onboarding-step__desc">Describe your recipe in any Indian language — just talk naturally</p>
+            </div>
+          </div>
+          <div class="onboarding-step">
+            <div class="onboarding-step__icon">✨</div>
+            <div class="onboarding-step__content">
+              <h3 class="onboarding-step__title">AI structures it</h3>
+              <p class="onboarding-step__desc">Your words are turned into ingredients, steps, and cook times</p>
+            </div>
+          </div>
+          <div class="onboarding-step">
+            <div class="onboarding-step__icon">📤</div>
+            <div class="onboarding-step__content">
+              <h3 class="onboarding-step__title">Share instantly</h3>
+              <p class="onboarding-step__desc">Save, share on WhatsApp, or copy to your notes</p>
+            </div>
+          </div>
+        </div>
+        <button id="onboarding-start-btn" class="onboarding-start-btn">Get Started</button>
+        <button id="onboarding-demo-btn" class="onboarding-demo-btn">Show me an example</button>
+      </div>
+    </div>
+    <!-- ===== CONFETTI CONTAINER ===== -->
+    <div id="confetti-container" class="confetti-container" aria-hidden="true"></div>
+
     <!-- ===== HEADER ===== -->
     <header class="header">
       <div class="header__brand">
@@ -240,6 +273,12 @@
             <span class="recipe-card__meta-item">
               <span class="recipe-card__meta-icon">👥</span>
               <span id="recipe-servings" contenteditable="false"></span>
+              <span id="serving-control" class="serving-control" style="display:none;">
+                <button id="serving-minus-btn" class="serving-control__btn" aria-label="Decrease servings">−</button>
+                <span id="serving-multiplier" class="serving-control__value">1</span>
+                <span class="serving-control__label">×</span>
+                <button id="serving-plus-btn" class="serving-control__btn" aria-label="Increase servings">+</button>
+              </span>
             </span>
           </div>
         </div>
@@ -319,6 +358,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           <span>Copy</span>
         </button>
+        <button id="share-native-btn" class="action-btn action-btn--share" aria-label="Share" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          <span>Share</span>
+        </button>
       </div>
 
       <!-- New Recipe button -->
@@ -339,7 +382,7 @@
 
     <!-- ===== TOAST ===== -->
     <div id="toast" class="toast" role="alert" aria-live="polite">
-      <span id="toast-message"></span>
+      <span id="toast-message" class="toast__message"></span>
     </div>
 
     <!-- ===== BOTTOM NAV ===== -->

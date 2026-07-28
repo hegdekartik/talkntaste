@@ -90,6 +90,23 @@ const errorMessage = document.getElementById('error-message');
 const toast = document.getElementById('toast');
 const toastMessage = document.getElementById('toast-message');
 
+// Onboarding
+const onboardingOverlay = document.getElementById('onboarding-overlay');
+const onboardingStartBtn = document.getElementById('onboarding-start-btn');
+const onboardingDemoBtn = document.getElementById('onboarding-demo-btn');
+
+// Confetti
+const confettiContainer = document.getElementById('confetti-container');
+
+// Serving control
+const servingControl = document.getElementById('serving-control');
+const servingMinusBtn = document.getElementById('serving-minus-btn');
+const servingPlusBtn = document.getElementById('serving-plus-btn');
+const servingMultiplier = document.getElementById('serving-multiplier');
+
+// Native share
+const shareNativeBtn = document.getElementById('share-native-btn');
+
 
 // ============================================================
 // Initialize
@@ -265,6 +282,9 @@ async function stopRecording() {
 }
 
 function handleMicClick() {
+  if (onboardingOverlay && !onboardingOverlay.classList.contains('hidden')) {
+    hideOnboarding();
+  }
   if (currentState === 'idle') {
     startRecording();
   } else if (currentState === 'recording') {
@@ -765,6 +785,26 @@ function resetProcessingView() {
 // Recipe Rendering
 // ============================================================
 function renderRecipe(recipe) {
+  resetServingMultiplier();
+
+  // Store original ingredient data for serving scaling
+  if (recipe.ingredients) {
+    originalIngredients = recipe.ingredients.map(ing => ({
+      name: ing.name,
+      quantity: ing.quantity || '',
+      notes: ing.notes || '',
+    }));
+  }
+
+  // Show serving control if at least one ingredient has a numeric quantity
+  const hasNumericQty = originalIngredients.some(ing => {
+    const qty = parseFloat(ing.quantity);
+    return !isNaN(qty);
+  });
+  if (servingControl) {
+    servingControl.style.display = hasNumericQty ? 'inline-flex' : 'none';
+  }
+
   // Language badge
   languageName.textContent = recipe.languageName || recipe.language || 'Detected';
 
@@ -1082,10 +1122,30 @@ function showError(message) {
 // ============================================================
 // Toast Notifications
 // ============================================================
-function showToast(message, duration = 2500) {
+function showToast(message, duration = 2500, action = null) {
   toastMessage.textContent = message;
   toast.classList.add('show');
-  setTimeout(() => {
+  toast.classList.remove('toast--undo');
+
+  // Remove any existing action button
+  const existingAction = toast.querySelector('.toast__action');
+  if (existingAction) existingAction.remove();
+
+  if (action) {
+    toast.classList.add('toast--undo');
+    const actionBtn = document.createElement('button');
+    actionBtn.className = 'toast__action';
+    actionBtn.textContent = action.label;
+    actionBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      action.onClick();
+      toast.classList.remove('show');
+    });
+    toast.appendChild(actionBtn);
+  }
+
+  clearTimeout(toast._hideTimer);
+  toast._hideTimer = setTimeout(() => {
     toast.classList.remove('show');
   }, duration);
 }
@@ -1134,6 +1194,7 @@ newRecipeBtn.addEventListener('click', () => {
   isDraft = false;
   draftMeta = null;
   audioPlayerContainer.style.display = 'none';
+  resetServingMultiplier();
   setState('idle');
 });
 
@@ -1155,6 +1216,7 @@ function resetApp() {
   recipeTranscript.textContent = '';
   if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
   resetProcessingView();
+  resetServingMultiplier();
   setState('idle');
 }
 
@@ -1198,6 +1260,130 @@ function setupDragDrop() {
 
 // ============================================================
 // Event Listeners
+// ============================================================
+// ============================================================
+// Onboarding
+// ============================================================
+function showOnboarding() {
+  if (onboardingOverlay) onboardingOverlay.classList.remove('hidden');
+}
+function hideOnboarding() {
+  if (onboardingOverlay) onboardingOverlay.classList.add('hidden');
+  localStorage.setItem('talkntaste_onboarding_seen', 'true');
+}
+
+async function showDemoRecipe() {
+  hideOnboarding();
+  const demoRecipe = {
+    title: 'Masala Dosa',
+    prepTime: '30 mins',
+    servings: '4',
+    languageName: 'Kannada',
+    language: 'kn',
+    ingredients: [
+      { name: 'rice (parboiled)', quantity: '2 cups', notes: 'soaked 4hrs' },
+      { name: 'urad dal', quantity: '½ cup', notes: 'soaked 4hrs' },
+      { name: 'fenugreek seeds', quantity: '1 tsp' },
+      { name: 'salt', quantity: 'to taste' },
+      { name: 'potatoes', quantity: '4 medium', notes: 'boiled' },
+      { name: 'onion', quantity: '1 large', notes: 'finely chopped' },
+      { name: 'green chilies', quantity: '2-3', notes: 'chopped' },
+      { name: 'mustard seeds', quantity: '1 tsp' },
+      { name: 'curry leaves', quantity: 'few' },
+      { name: 'turmeric', quantity: '¼ tsp' },
+    ],
+    steps: [
+      { stepNumber: 1, instruction: 'Grind soaked rice and urad dal with fenugreek seeds to a smooth batter. Ferment overnight.' },
+      { stepNumber: 2, instruction: 'For the filling, mash boiled potatoes. Heat oil, add mustard seeds, curry leaves, onion, and green chilies. Add turmeric, salt, and mashed potatoes. Mix well.' },
+      { stepNumber: 3, instruction: 'Heat a non-stick tawa. Pour a ladle of batter and spread in a circular motion. Drizzle oil around the edges.' },
+      { stepNumber: 4, instruction: 'Place a spoonful of potato filling in the center. Fold the dosa over it.' },
+      { stepNumber: 5, instruction: 'Cook until golden brown. Serve hot with coconut chutney and sambar.' },
+    ],
+    transcript: 'To make masala dosa, first soak 2 cups of parboiled rice and half cup urad dal with 1 teaspoon fenugreek seeds for 4 hours. Grind to a smooth batter and ferment overnight. For the potato filling, boil 4 medium potatoes. In a pan, heat oil, add mustard seeds, curry leaves, chopped onion, and green chilies. Add turmeric powder, salt, and mashed potatoes. Mix well. Heat a tawa, pour a ladle of batter and spread thin. Drizzle oil. Place the filling in the center and fold. Cook till golden. Serve with chutney and sambar.',
+    additionalInfo: 'This is my grandmother\'s recipe — she made the crispiest dosas in our neighborhood. The key is the fermentation time; in colder weather, let the batter ferment for a full 24 hours.',
+  };
+  currentRecipe = demoRecipe;
+  isDraft = false;
+  draftMeta = null;
+  renderRecipe(demoRecipe);
+  if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
+  audioPlayerContainer.style.display = 'none';
+  setState('result');
+}
+
+
+// ============================================================
+// Confetti
+// ============================================================
+function fireConfetti(count = 40) {
+  if (!confettiContainer) return;
+  const colors = ['#F59E0B', '#FBBF24', '#EF4444', '#4ADE80', '#60A5FA', '#A78BFA', '#F472B6'];
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const size = 6 + Math.random() * 10;
+    piece.style.width = size + 'px';
+    piece.style.height = size + 'px';
+    piece.style.left = Math.random() * 100 + '%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.animationDuration = (2 + Math.random() * 3) + 's';
+    piece.style.animationDelay = Math.random() * 0.5 + 's';
+    confettiContainer.appendChild(piece);
+    setTimeout(() => piece.remove(), 5000);
+  }
+}
+
+
+// ============================================================
+// Serving Multiplier
+// ============================================================
+let servingMultiplierValue = 1;
+let originalIngredients = [];
+
+function updateServingMultiplier(delta) {
+  const newVal = servingMultiplierValue + delta;
+  if (newVal < 0.5 || newVal > 8) return;
+  servingMultiplierValue = newVal;
+  servingMultiplier.textContent = servingMultiplierValue;
+
+  // Recalculate ingredient quantities
+  const items = ingredientsList.querySelectorAll('.ingredient-item');
+  items.forEach((item, i) => {
+    const textEl = item.querySelector('.ingredient-item__text');
+    if (i < originalIngredients.length) {
+      const orig = originalIngredients[i];
+      let newText = '';
+      if (orig.quantity) {
+        const qty = parseFloat(orig.quantity);
+        if (!isNaN(qty)) {
+          const scaled = (qty * servingMultiplierValue).toFixed(
+            qty % 1 === 0 ? 0 : qty < 1 ? 2 : 1
+          );
+          const unit = orig.quantity.replace(/[\d.\s]+/g, '').trim();
+          newText = `${scaled}${unit ? ' ' + unit : ''} ${orig.name}`.trim();
+        } else {
+          newText = `${orig.quantity} ${orig.name}`.trim();
+        }
+      } else {
+        newText = orig.name;
+      }
+      if (orig.notes) newText += ` (${orig.notes})`;
+      textEl.textContent = newText;
+    }
+  });
+}
+
+function resetServingMultiplier() {
+  servingMultiplierValue = 1;
+  originalIngredients = [];
+  if (servingMultiplier) servingMultiplier.textContent = '1';
+  if (servingControl) servingControl.style.display = 'none';
+}
+
+
+// ============================================================
+// Init
 // ============================================================
 function init() {
   // Mic button
@@ -1254,6 +1440,52 @@ function init() {
     });
   }
 
+  // Onboarding
+  if (onboardingStartBtn) {
+    onboardingStartBtn.addEventListener('click', hideOnboarding);
+  }
+  if (onboardingDemoBtn) {
+    onboardingDemoBtn.addEventListener('click', showDemoRecipe);
+  }
+
+  // Check onboarding
+  const onboardingSeen = localStorage.getItem('talkntaste_onboarding_seen');
+  if (!onboardingSeen) {
+    setTimeout(showOnboarding, 400);
+  }
+
+  // Dismiss onboarding on overlay click or Escape
+  if (onboardingOverlay) {
+    onboardingOverlay.addEventListener('click', (e) => {
+      if (e.target === onboardingOverlay) hideOnboarding();
+    });
+    document.addEventListener('keydown', function onOboardKey(e) {
+      if (e.key === 'Escape' && !onboardingOverlay.classList.contains('hidden')) {
+        hideOnboarding();
+      }
+    });
+  }
+
+  // Native share
+  if (shareNativeBtn && navigator.share) {
+    shareNativeBtn.style.display = 'flex';
+    shareNativeBtn.addEventListener('click', async () => {
+      if (!currentRecipe) return;
+      syncRecipeFromDOM();
+      const { shareNative } = await import('./share.js');
+      const ok = await shareNative(currentRecipe);
+      if (!ok) showToast('Share cancelled');
+    });
+  }
+
+  // Serving controls
+  if (servingMinusBtn) {
+    servingMinusBtn.addEventListener('click', () => updateServingMultiplier(-0.5));
+  }
+  if (servingPlusBtn) {
+    servingPlusBtn.addEventListener('click', () => updateServingMultiplier(0.5));
+  }
+
   // Set initial state
   setState('idle');
 
@@ -1264,8 +1496,26 @@ function init() {
 // Discard / Publish
 // ============================================================
 discardBtn.addEventListener('click', () => {
-  showToast('Recipe discarded');
+  const discardedRecipe = currentRecipe;
+  const discardedMeta = draftMeta;
   resetApp();
+  showToast('Recipe discarded', 4000, {
+    label: 'Undo',
+    onClick: () => {
+      currentRecipe = discardedRecipe;
+      draftMeta = discardedMeta;
+      isDraft = true;
+      renderRecipe(discardedRecipe);
+      draftActions.style.display = 'flex';
+      libraryActions.style.display = 'none';
+      if (backToLibraryBtn) backToLibraryBtn.style.display = 'none';
+      if (discardedMeta && discardedMeta.audioPath) {
+        audioPlayerContainer.style.display = 'block';
+      }
+      setState('result');
+      showToast('Recipe restored');
+    },
+  });
 });
 
 publishBtn.addEventListener('click', async () => {
@@ -1289,8 +1539,19 @@ publishBtn.addEventListener('click', async () => {
       currentRecipe.id = res.recipeId;
     }
 
-    showToast('Recipe published! 🎉');
+    fireConfetti(50);
     isDraft = false;
+
+    const publishedId = currentRecipe.id;
+    showToast('Published!', 4000, {
+      label: 'Undo',
+      onClick: () => {
+        currentDatabaseRecipes = currentDatabaseRecipes.filter(r => r.id !== publishedId);
+        renderDatabase(currentDatabaseRecipes);
+        isDraft = true;
+        showToast('Removed from library');
+      },
+    });
 
     // Insert newly published recipe to local database recipes list
     const newDbRecipe = {
