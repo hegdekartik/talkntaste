@@ -15,7 +15,6 @@ wakeUpBackend();
 // DOM References
 // ============================================================
 const app = document.getElementById('app');
-const usernameInput = document.getElementById('username-input');
 
 // Input view
 const micBtn = document.getElementById('mic-btn');
@@ -24,10 +23,12 @@ const timerDisplay = document.getElementById('timer-display');
 const waveformCanvas = document.getElementById('waveform-canvas');
 const audioUploadInput = document.getElementById('audio-upload');
 const durationTip = document.getElementById('duration-tip');
-const durationTipClose = document.getElementById('duration-tip-close');
 const navRecordBtn = document.getElementById('nav-record-btn');
 const navLibraryBtn = document.getElementById('nav-library-btn');
-const languageSelect = document.getElementById('language-select');
+
+// User preferences (stored from onboarding)
+let userName = localStorage.getItem('talkntaste_username') || '';
+let userLanguage = localStorage.getItem('talkntaste_language') || '';
 
 // Database view
 const backToRecordBtn = document.getElementById('back-to-record-btn');
@@ -92,8 +93,13 @@ const toastMessage = document.getElementById('toast-message');
 
 // Onboarding
 const onboardingOverlay = document.getElementById('onboarding-overlay');
+const onboardingCardTour = document.getElementById('onboarding-card-tour');
+const onboardingCardSetup = document.getElementById('onboarding-card-setup');
 const onboardingStartBtn = document.getElementById('onboarding-start-btn');
 const onboardingDemoBtn = document.getElementById('onboarding-demo-btn');
+const onboardingNameInput = document.getElementById('onboarding-name-input');
+const onboardingLangSelect = document.getElementById('onboarding-lang-select');
+const onboardingDoneBtn = document.getElementById('onboarding-done-btn');
 
 // Confetti
 const confettiContainer = document.getElementById('confetti-container');
@@ -111,25 +117,7 @@ const shareNativeBtn = document.getElementById('share-native-btn');
 // ============================================================
 // Initialize
 // ============================================================
-const savedUsername = localStorage.getItem('talkntaste_username');
-if (savedUsername) {
-  usernameInput.value = savedUsername;
-}
-
-const savedLanguage = localStorage.getItem('talkntaste_language');
-if (savedLanguage && languageSelect) {
-  languageSelect.value = savedLanguage;
-}
-
-usernameInput.addEventListener('change', (e) => {
-  localStorage.setItem('talkntaste_username', e.target.value.trim());
-});
-
-if (languageSelect) {
-  languageSelect.addEventListener('change', (e) => {
-    localStorage.setItem('talkntaste_language', e.target.value);
-  });
-}
+// User name & language are now stored from onboarding (variables above)
 
 // ============================================================
 // Theme Toggle (system-default, manual override)
@@ -275,9 +263,7 @@ async function stopRecording() {
   const result = await r.stop();
 
   if (result && result.blob) {
-    // Pass recorded duration to processRecording for batch mode detection
-    const languageHint = languageSelect ? languageSelect.value : '';
-    await processRecording(result.blob, result.duration, languageHint);
+    await processRecording(result.blob, result.duration, userLanguage);
   }
 }
 
@@ -547,7 +533,7 @@ function handleCardTap(recipe) {
 // ============================================================
 
 /** Max audio duration in seconds */
-const MAX_AUDIO_DURATION = 180; // 3 minutes
+const MAX_AUDIO_DURATION = 300; // 5 minutes
 
 /**
  * Get the duration of an audio Blob/File using Web Audio API.
@@ -581,12 +567,11 @@ async function handleFileUpload(file) {
   // Client-side duration check
   const duration = await getAudioDuration(file);
   if (duration !== null && duration > MAX_AUDIO_DURATION) {
-    showToast(`Audio is too long (${Math.round(duration)}s). Please keep it under 3 minutes.`);
+    showToast(`Audio is too long (${Math.round(duration)}s). Please keep it under 5 minutes.`);
     return;
   }
 
-  const languageHint = languageSelect ? languageSelect.value : '';
-  processRecording(file, duration, languageHint);
+  processRecording(file, duration, userLanguage);
 }
 
 
@@ -617,14 +602,7 @@ async function processRecording(audioBlob, knownDuration = null, languageHint = 
     // Activate first step indicator
     stepTranscribe.classList.add('active');
     
-    // Save user name if modified just before recording
-    let authorName = usernameInput.value.trim();
-    if (!authorName) {
-      authorName = `Anon-${Math.floor(1000 + Math.random() * 9000)}`;
-    } else {
-      localStorage.setItem('talkntaste_username', authorName);
-    }
-    pendingAuthorName = authorName;
+    pendingAuthorName = userName || `Anon-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const data = await transcribeAudio(audioBlob, languageHint);
 
@@ -1229,11 +1207,39 @@ function setupDragDrop() {
 // Onboarding
 // ============================================================
 function showOnboarding() {
+  if (onboardingCardTour) onboardingCardTour.classList.remove('hidden');
+  if (onboardingCardSetup) onboardingCardSetup.classList.add('hidden');
   if (onboardingOverlay) onboardingOverlay.classList.remove('hidden');
 }
 function hideOnboarding() {
   if (onboardingOverlay) onboardingOverlay.classList.add('hidden');
   localStorage.setItem('talkntaste_onboarding_seen', 'true');
+}
+function showSetupStep() {
+  if (onboardingCardTour) onboardingCardTour.classList.add('hidden');
+  if (onboardingCardSetup) onboardingCardSetup.classList.remove('hidden');
+  // Pre-fill saved values
+  if (onboardingNameInput && userName) onboardingNameInput.value = userName;
+  if (onboardingLangSelect && userLanguage) onboardingLangSelect.value = userLanguage;
+}
+function completeSetup() {
+  const name = onboardingNameInput ? onboardingNameInput.value.trim() : '';
+  const lang = onboardingLangSelect ? onboardingLangSelect.value : '';
+  if (name) {
+    userName = name;
+    localStorage.setItem('talkntaste_username', name);
+  } else {
+    userName = '';
+    localStorage.removeItem('talkntaste_username');
+  }
+  if (lang) {
+    userLanguage = lang;
+    localStorage.setItem('talkntaste_language', lang);
+  } else {
+    userLanguage = '';
+    localStorage.removeItem('talkntaste_language');
+  }
+  hideOnboarding();
 }
 
 async function showDemoRecipe() {
@@ -1397,19 +1403,26 @@ function init() {
   // Drag & drop
   setupDragDrop();
 
-  // Duration tip dismiss
-  if (durationTipClose) {
-    durationTipClose.addEventListener('click', () => {
-      durationTip.classList.add('hidden');
-    });
+  // Duration tip auto-dismiss after 6s
+  if (durationTip) {
+    setTimeout(() => durationTip.classList.add('hidden'), 6000);
   }
 
   // Onboarding
   if (onboardingStartBtn) {
-    onboardingStartBtn.addEventListener('click', hideOnboarding);
+    onboardingStartBtn.addEventListener('click', showSetupStep);
   }
   if (onboardingDemoBtn) {
     onboardingDemoBtn.addEventListener('click', showDemoRecipe);
+  }
+  if (onboardingDoneBtn) {
+    onboardingDoneBtn.addEventListener('click', completeSetup);
+  }
+  if (onboardingLangSelect) {
+    onboardingLangSelect.addEventListener('change', (e) => {
+      userLanguage = e.target.value;
+      localStorage.setItem('talkntaste_language', userLanguage);
+    });
   }
 
   // Check onboarding
@@ -1418,13 +1431,15 @@ function init() {
     setTimeout(showOnboarding, 400);
   }
 
-  // Dismiss onboarding on overlay click or Escape
-  if (onboardingOverlay) {
+  // Prevent dismissing setup by clicking overlay — user must tap Done
+  if (onboardingOverlay && onboardingCardSetup) {
     onboardingOverlay.addEventListener('click', (e) => {
+      if (e.target === onboardingOverlay && !onboardingCardSetup.classList.contains('hidden')) return;
       if (e.target === onboardingOverlay) hideOnboarding();
     });
     document.addEventListener('keydown', function onOboardKey(e) {
       if (e.key === 'Escape' && !onboardingOverlay.classList.contains('hidden')) {
+        if (!onboardingCardSetup.classList.contains('hidden')) return;
         hideOnboarding();
       }
     });

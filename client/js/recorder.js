@@ -15,7 +15,7 @@ export class AudioRecorder {
     this.isRecording = false;
 
     // Config
-    this.maxDuration = 180; // 3 minutes in seconds
+    this.maxDuration = 300; // 5 minutes in seconds
     this.warningDuration = 150; // 2:30 warning
 
     // Callbacks
