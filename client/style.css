@@ -1544,9 +1544,12 @@ details[open] .recipe-section__header--link .transcript-chevron {
   align-items: center;
   gap: 0.45rem;
 }
-.rmc-emoji {
-  font-size: 1.35rem;
+.rmc-icon {
+  width: 28px;
+  height: 28px;
   flex-shrink: 0;
+  color: var(--ember);
+  opacity: 0.7;
 }
 
 .rmc-meta {
@@ -1780,9 +1783,13 @@ html[data-theme="dark"] audio { filter: invert(88%) hue-rotate(180deg); opacity:
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.3rem;
   flex-shrink: 0;
   border: 1px solid var(--border-subtle);
+  color: var(--ember);
+}
+.onboarding-step__icon svg {
+  width: 22px;
+  height: 22px;
 }
 .onboarding-step__content {
   flex: 1;

@@ -469,13 +469,10 @@ function renderFilteredCards(recipes) {
       authorStr = `<span class="rmc-author">${escapeHtml(recipe.author_name)}</span>`;
     }
     
-    // Pick a food emoji based on recipe tags/title
-    const recipeEmoji = pickFoodEmoji(recipe);
-    
     card.innerHTML = `
       <div class="rmc-accent"></div>
       <div class="rmc-content">
-        <h3 class="rmc-title"><span class="rmc-emoji">${recipeEmoji}</span> ${escapeHtml(recipe.title || 'Untitled')}</h3>
+        <h3 class="rmc-title"><svg class="rmc-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M7 2v3h6V2"/><line x1="6" y1="8" x2="14" y2="8"/><line x1="6" y1="11" x2="12" y2="11"/><line x1="6" y1="14" x2="10" y2="14"/></svg> ${escapeHtml(recipe.title || 'Untitled')}</h3>
         <div class="rmc-meta">
           ${authorStr}${authorStr ? '<span class="rmc-meta-divider"></span>' : ''}
           <span class="rmc-meta-item">
@@ -507,44 +504,6 @@ function renderFilteredCards(recipes) {
     cards.push(card);
     recipeCarousel.appendChild(card);
   });
-}
-
-/**
- * Pick a representative food emoji for a recipe based on its tags and title.
- */
-function pickFoodEmoji(recipe) {
-  const allText = [
-    (recipe.title || '').toLowerCase(),
-    ...(recipe._normalizedTags || []).map(t => t.toLowerCase()),
-  ].join(' ');
-
-  // Ordered by specificity — first match wins
-  const emojiMap = [
-    { keywords: ['biryani', 'pulao', 'fried rice'], emoji: '🍚' },
-    { keywords: ['dosa', 'idli', 'uttapam', 'appam'], emoji: '🫓' },
-    { keywords: ['roti', 'chapati', 'paratha', 'naan', 'bread'], emoji: '🫶' },
-    { keywords: ['chicken', 'murgh', 'kozhi'], emoji: '🍗' },
-    { keywords: ['mutton', 'lamb', 'meat', 'non-vegetarian'], emoji: '🍖' },
-    { keywords: ['fish', 'prawn', 'shrimp', 'seafood'], emoji: '🐟' },
-    { keywords: ['egg', 'omelette', 'anda'], emoji: '🥚' },
-    { keywords: ['sambar', 'rasam', 'soup', 'dal', 'daal'], emoji: '🍲' },
-    { keywords: ['paneer', 'cheese'], emoji: '🧀' },
-    { keywords: ['halwa', 'kheer', 'payasam', 'laddu', 'dessert', 'sweet'], emoji: '🍮' },
-    { keywords: ['pakoda', 'pakora', 'samosa', 'snack', 'bhaji'], emoji: '🧆' },
-    { keywords: ['salad', 'raita'], emoji: '🥗' },
-    { keywords: ['chutney', 'pickle'], emoji: '🫙' },
-    { keywords: ['tea', 'chai', 'coffee'], emoji: '☕' },
-    { keywords: ['juice', 'smoothie', 'drink'], emoji: '🥤' },
-    { keywords: ['curry', 'gravy', 'masala'], emoji: '🍛' },
-    { keywords: ['south-indian'], emoji: '🥘' },
-    { keywords: ['north-indian'], emoji: '🫕' },
-    { keywords: ['vegetarian'], emoji: '🥦' },
-  ];
-
-  for (const { keywords, emoji } of emojiMap) {
-    if (keywords.some(kw => allText.includes(kw))) return emoji;
-  }
-  return '🍽️'; // generic fallback
 }
 
 // Scroll listener removed for vertical list
