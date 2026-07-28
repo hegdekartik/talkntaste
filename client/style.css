@@ -1,10 +1,10 @@
 /* ============================================================
-   TalknTaste — Indigo Kitchen Design System
+   TalknTaste — Navy Kitchen Design System
    Dark-first, system-aware, with manual toggle
-   Indigo + Emerald accents, deep surfaces, atmospheric depth
+   Navy + Emerald accents, deep surfaces, atmospheric depth
    ============================================================ */
 
-/* ---- Light Mode — Indigo + Emerald ---- */
+/* ---- Light Mode — Navy + Emerald ---- */
 :root {
   --bg-deep:          #F6F5F2;
   --bg-surface:       #FFFFFF;
@@ -17,10 +17,10 @@
   --text-dim:         #555555;
   --text-faint:       #888888;
 
-  --ember:            #4F46E5;
-  --ember-deep:       #4338CA;
-  --ember-glow:       rgba(79, 70, 229, 0.12);
-  --ember-soft:       rgba(79, 70, 229, 0.06);
+  --ember:            #2563EB;
+  --ember-deep:       #1D4ED8;
+  --ember-glow:       rgba(37, 99, 235, 0.12);
+  --ember-soft:       rgba(37, 99, 235, 0.06);
   --flame:            #E11D48;
   --flame-glow:       rgba(225, 29, 72, 0.12);
   --sage:             #059669;
@@ -29,7 +29,7 @@
   --shadow-sm:        0 1px 2px rgba(0,0,0,0.04), 0 1px 1px rgba(0,0,0,0.02);
   --shadow-md:        0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
   --shadow-lg:        0 8px 24px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04);
-  --shadow-glow:      0 0 20px rgba(79, 70, 229, 0.10);
+  --shadow-glow:      0 0 20px rgba(37, 99, 235, 0.10);
 
   --font-heading: 'Outfit', 'Mukta', sans-serif;
   --font-body:    'Inter', 'Mukta', sans-serif;
@@ -82,17 +82,17 @@
     --text-bright:      #F5F5F5;
     --text-dim:         #B0B0B0;
     --text-faint:       #808080;
-    --ember:            #818CF8;
-    --ember-deep:       #6366F1;
-    --ember-glow:       rgba(129, 140, 248, 0.15);
-    --ember-soft:       rgba(129, 140, 248, 0.07);
+    --ember:            #60A5FA;
+    --ember-deep:       #3B82F6;
+    --ember-glow:       rgba(96, 165, 250, 0.15);
+    --ember-soft:       rgba(96, 165, 250, 0.07);
     --flame:            #FB7185;
     --flame-glow:       rgba(251, 113, 133, 0.15);
     --sage:             #34D399;
     --shadow-sm:        0 1px 2px rgba(0,0,0,0.3);
     --shadow-md:        0 4px 12px rgba(0,0,0,0.35);
     --shadow-lg:        0 8px 24px rgba(0,0,0,0.4);
-    --shadow-glow:      0 0 24px rgba(129, 140, 248, 0.12);
+    --shadow-glow:      0 0 24px rgba(96, 165, 250, 0.12);
     --bg-primary:   var(--bg-deep);
     --bg-secondary: var(--bg-surface-raised);
     --bg-card:      var(--bg-surface);
@@ -122,17 +122,17 @@ html[data-theme="dark"] {
   --text-bright:      #F5F5F5;
   --text-dim:         #B0B0B0;
   --text-faint:       #808080;
-  --ember:            #818CF8;
-  --ember-deep:       #6366F1;
-  --ember-glow:       rgba(129, 140, 248, 0.15);
-  --ember-soft:       rgba(129, 140, 248, 0.07);
+  --ember:            #60A5FA;
+  --ember-deep:       #3B82F6;
+  --ember-glow:       rgba(96, 165, 250, 0.15);
+  --ember-soft:       rgba(96, 165, 250, 0.07);
   --flame:            #FB7185;
   --flame-glow:       rgba(251, 113, 133, 0.15);
   --sage:             #34D399;
   --shadow-sm:        0 1px 2px rgba(0,0,0,0.3);
   --shadow-md:        0 4px 12px rgba(0,0,0,0.35);
   --shadow-lg:        0 8px 24px rgba(0,0,0,0.4);
-  --shadow-glow:      0 0 24px rgba(129, 140, 248, 0.12);
+  --shadow-glow:      0 0 24px rgba(96, 165, 250, 0.12);
   --bg-primary:   var(--bg-deep);
   --bg-secondary: var(--bg-surface-raised);
   --bg-card:      var(--bg-surface);
@@ -161,17 +161,17 @@ html[data-theme="light"] {
   --text-bright:      #111111;
   --text-dim:         #555555;
   --text-faint:       #888888;
-  --ember:            #4F46E5;
-  --ember-deep:       #4338CA;
-  --ember-glow:       rgba(79, 70, 229, 0.12);
-  --ember-soft:       rgba(79, 70, 229, 0.06);
+  --ember:            #2563EB;
+  --ember-deep:       #1D4ED8;
+  --ember-glow:       rgba(37, 99, 235, 0.12);
+  --ember-soft:       rgba(37, 99, 235, 0.06);
   --flame:            #E11D48;
   --flame-glow:       rgba(225, 29, 72, 0.12);
   --sage:             #059669;
   --shadow-sm:        0 1px 2px rgba(0,0,0,0.04);
   --shadow-md:        0 4px 12px rgba(0,0,0,0.06);
   --shadow-lg:        0 8px 24px rgba(0,0,0,0.08);
-  --shadow-glow:      0 0 20px rgba(79, 70, 229, 0.10);
+  --shadow-glow:      0 0 20px rgba(37, 99, 235, 0.10);
   --bg-primary:   var(--bg-deep);
   --bg-secondary: var(--bg-surface-raised);
   --bg-card:      var(--bg-surface);
@@ -281,7 +281,9 @@ ul, ol { list-style: none; }
   grid-column: 2;
 }
 .header__icon {
-  font-size: 1.2rem;
+  width: 22px;
+  height: 22px;
+  color: var(--ember);
 }
 .header__title {
   font-family: var(--font-heading);
@@ -421,10 +423,12 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
 }
 .language-selector-icon {
   position: absolute;
-  left: 0.7rem;
-  font-size: 0.85rem;
+  left: 0.75rem;
+  width: 15px;
+  height: 15px;
   pointer-events: none;
   z-index: 1;
+  color: var(--text-faint);
 }
 .language-select {
   padding: 0.55rem 2rem 0.55rem 2rem;
@@ -480,7 +484,7 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   color: var(--ember);
   animation: slideUp 0.5s var(--ease-out) 0.2s both;
 }
-.duration-tip__icon { font-size: 0.9rem; flex-shrink: 0; }
+.duration-tip__icon { width: 15px; height: 15px; flex-shrink: 0; color: var(--text-faint); stroke-width: 1.3; }
 .duration-tip__text { flex: 1; line-height: 1.3; }
 .duration-tip__close {
   color: var(--text-faint);
@@ -532,7 +536,7 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   align-items: center;
   justify-content: center;
   position: relative;
-  min-height: 260px;
+  min-height: 280px;
   gap: 0;
 }
 
@@ -591,6 +595,8 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   justify-content: center;
   position: relative;
   z-index: 2;
+  border: none;
+  cursor: pointer;
   transition: transform var(--duration-fast) var(--ease-spring),
               box-shadow var(--duration-normal) var(--ease-out),
               background var(--duration-normal) var(--ease-out);
@@ -598,13 +604,13 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
   animation: idleGlow 3s ease-in-out infinite;
 }
 @keyframes idleGlow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--ember-glow), 0 2px 8px rgba(0,0,0,0.08); }
-  50%       { box-shadow: 0 0 0 12px var(--ember-glow), 0 2px 8px rgba(0,0,0,0.08); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--ember-glow), 0 4px 16px rgba(0,0,0,0.06); }
+  50%       { box-shadow: 0 0 0 14px var(--ember-glow), 0 4px 16px rgba(0,0,0,0.06); }
 }
 .mic-btn:active { transform: scale(0.92); }
 .mic-btn:hover  { transform: scale(1.03); }
-.mic-btn__icon      { width: 38px; height: 38px; }
-.mic-btn__stop-icon { width: 28px; height: 28px; display: none; }
+.mic-btn__icon      { width: 42px; height: 42px; }
+.mic-btn__stop-icon { width: 30px; height: 30px; display: none; }
 
 [data-state="recording"] .mic-btn {
   background: var(--flame);
@@ -614,8 +620,8 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
 [data-state="recording"] .mic-btn__icon      { display: none; }
 [data-state="recording"] .mic-btn__stop-icon { display: block; }
 @keyframes recordingGlow {
-  0%, 100% { box-shadow: 0 0 0 0 var(--flame-glow), 0 2px 8px rgba(0,0,0,0.1); }
-  50%       { box-shadow: 0 0 0 16px var(--flame-glow), 0 2px 8px rgba(0,0,0,0.1); }
+  0%, 100% { box-shadow: 0 0 0 0 var(--flame-glow), 0 4px 16px rgba(0,0,0,0.08); }
+  50%       { box-shadow: 0 0 0 20px var(--flame-glow), 0 4px 16px rgba(0,0,0,0.08); }
 }
 
 
@@ -650,13 +656,25 @@ html[data-theme="dark"]  .theme-toggle-btn .icon-moon { display: block; }
 
 /* ---- Mic Instruction ---- */
 .mic-instruction {
-  margin-top: var(--space-md);
-  font-size: 0.88rem;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
   color: var(--text-faint);
   text-align: center;
   transition: color var(--duration-fast);
+  letter-spacing: 0.02em;
+  font-weight: 450;
 }
 [data-state="recording"] .mic-instruction { color: var(--flame); }
+
+.mic-tagline {
+  margin-bottom: 1.5rem;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: -0.01em;
+}
 
 
 /* ---- Processing View ---- */
@@ -1501,14 +1519,14 @@ details[open] .recipe-section__header--link .transcript-chevron {
   display: flex;
   flex-direction: row;
   align-items: stretch;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.05), 0 1px 4px rgba(0,0,0,0.03);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06), 0 2px 6px rgba(0,0,0,0.03);
   transition: all var(--duration-fast) var(--ease-out);
   outline: none;
   overflow: hidden;
   position: relative;
 }
 .recipe-mini-card:hover {
-  box-shadow: 0 8px 28px rgba(79, 70, 229, 0.08), 0 2px 8px rgba(0,0,0,0.04);
+  box-shadow: 0 12px 36px rgba(37, 99, 235, 0.10), 0 4px 12px rgba(0,0,0,0.05);
   transform: translateY(-2px);
   border-color: var(--ember-soft);
 }
@@ -1523,14 +1541,14 @@ details[open] .recipe-section__header--link .transcript-chevron {
 }
 
 .rmc-content {
-  padding: 1.2rem var(--space-md);
+  padding: 1.4rem var(--space-lg) 1.4rem var(--space-md);
   display: flex;
   flex-direction: column;
   justify-content: center;
   flex: 1;
   min-width: 0;
-  min-height: 110px;
-  gap: 0.45rem;
+  min-height: 130px;
+  gap: 0.5rem;
 }
 
 .rmc-title {
