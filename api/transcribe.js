@@ -1,7 +1,7 @@
 import fs from 'fs';
 import { transcribeAudio } from './_lib/sarvam.js';
 import { downloadAudio } from './_lib/supabase.js';
-import { getRawBody } from './getRawBody.js';
+import { getRawBody } from './_lib/getRawBody.js';
 
 export const config = {
   maxDuration: 120,
