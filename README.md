@@ -15,6 +15,7 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 - **✏️ Inline Editing** — Tap to edit any field directly on the recipe card.
 - **📱 Sharing** — One-tap share with emoji-rich formatting for WhatsApp or Twitter.
 - **📚 Recipe Library** — Automatically saves your structured recipes to a database with a beautiful vibrant, block-based UI.
+- **💬 Chat with your recipes** — Converse with your saved recipe library in any Indian language. Ask what to cook, swap ingredients, scale for guests, or get a walkthrough — grounded in *your* saved recipes, powered by Sarvam-105B (OpenAI fallback).
 - **🧭 Bottom Navigation** — Intuitive mobile-first tab bar to seamlessly switch between Recording and your Library.
 
 ## 🛠️ Tech Stack
@@ -26,6 +27,7 @@ TalknTaste is a voice-first web app that converts spoken recipes into beautifull
 | **Database & Storage** | [Supabase](https://supabase.com) (PostgreSQL + Blob Storage) |
 | **Speech-to-Text** | [Sarvam AI](https://sarvam.ai) (Saaras v3) |
 | **Recipe Structuring** | Sarvam AI (sarvam-105b) with OpenAI GPT-4o-mini fallback |
+| **Recipe Chat** | Sarvam AI (sarvam-105b) with OpenAI GPT-4o-mini fallback |
 | **Audio Recording** | Web MediaRecorder API |
 
 ## 📦 Project Structure
@@ -42,6 +44,7 @@ talkntaste/
 │   ├── js/
 │   │   ├── app.js        # Core state machine & UI controller
 │   │   ├── api.js        # API communication logic
+│   │   ├── chat.js       # Chat-with-library UI controller
 │   │   └── ...
 ├── docs/                 # System architecture, deployment, and marketing guides
 ├── vercel.json           # Vercel deployment configuration
@@ -111,6 +114,7 @@ The project is fully configured to deploy to Vercel as a single app.
 | `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes (including context) via Sarvam LLM |
 | `POST` | `/api/save` | Saves the structured recipe to Supabase PostgreSQL |
 | `GET`  | `/api/recipes` | Fetches the user's recipe library from Supabase |
+| `POST` | `/api/chat` | Converses with the saved recipe library in natural language via Sarvam (OpenAI fallback) |
 
 ## 📄 License
 MIT

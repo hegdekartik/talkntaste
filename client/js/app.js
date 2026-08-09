@@ -7,6 +7,7 @@
 import { AudioRecorder, formatTime } from './recorder.js';
 import { processAudio, fetchRecipes, wakeUpBackend, saveRecipeToServer, updateRecipeOnServer } from './api.js';
 import { shareWhatsApp, shareTwitter, copyToClipboard } from './share.js';
+import { initChat, activateChat } from './chat.js';
 
 // Wake up backend immediately to avoid cold start delays
 wakeUpBackend();
@@ -25,6 +26,7 @@ const audioUploadInput = document.getElementById('audio-upload');
 const durationTip = document.getElementById('duration-tip');
 const navRecordBtn = document.getElementById('nav-record-btn');
 const navLibraryBtn = document.getElementById('nav-library-btn');
+const navChatBtn = document.getElementById('nav-chat-btn');
 
 // User preferences (stored from onboarding)
 let userName = localStorage.getItem('talkntaste_username') || '';
@@ -172,15 +174,14 @@ let draftMeta = null; // { transcript, language, audioPath, originalName, author
 // ============================================================
 function setState(newState) {
   currentState = newState;
-  
-  if (navRecordBtn && navLibraryBtn) {
-    if (newState === 'database' || ((newState === 'result' || newState === 'editing') && !isDraft)) {
-      navRecordBtn.classList.remove('active');
-      navLibraryBtn.classList.add('active');
-    } else {
-      navRecordBtn.classList.add('active');
-      navLibraryBtn.classList.remove('active');
-    }
+
+  if (navRecordBtn && navLibraryBtn && navChatBtn) {
+    const isChat = newState === 'chat';
+    const isLibrary = newState === 'database' || ((newState === 'result' || newState === 'editing') && !isDraft);
+
+    navChatBtn.classList.toggle('active', isChat);
+    navLibraryBtn.classList.toggle('active', isLibrary);
+    navRecordBtn.classList.toggle('active', !isChat && !isLibrary);
   }
 
   if (!document.startViewTransition) {
@@ -212,6 +213,11 @@ function routeFocus(state) {
       pView.focus();
     } else if (state === 'idle') {
       micBtn.focus();
+    } else if (state === 'chat') {
+      const cView = document.getElementById('chat-view');
+      cView.setAttribute('tabindex', '-1');
+      cView.focus();
+      activateChat();
     } else if (state === 'database') {
       const dView = document.getElementById('database-view');
       dView.setAttribute('tabindex', '-1');
@@ -311,6 +317,13 @@ navRecordBtn.addEventListener('click', () => {
     setState('idle');
   }
 });
+
+if (navChatBtn) {
+  navChatBtn.addEventListener('click', () => {
+    if (currentState === 'chat') return;
+    setState('chat');
+  });
+}
 
 backToRecordBtn.addEventListener('click', () => {
   setState('idle');
@@ -1467,6 +1480,9 @@ function init() {
 
   // Set initial state
   setState('idle');
+
+  // Chat with your recipes
+  initChat();
 
   console.log('🍳 TalknTaste initialized');
 }

@@ -10,6 +10,7 @@ import structureHandler from './structure.js';
 import saveHandler from './save.js';
 import updateHandler from './update.js';
 import recipesHandler from './recipes.js';
+import chatHandler from './chat.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -64,6 +65,7 @@ app.post('/api/structure', structureHandler);
 app.post('/api/save', saveHandler);
 app.post('/api/update', updateHandler);
 app.put('/api/recipes', updateHandler);
+app.post('/api/chat', chatHandler);
 
 
 // ---------------------------------------------------------------------------

@@ -362,3 +362,30 @@ export async function fetchRecipes() {
   const { recipes } = await response.json();
   return recipes;
 }
+
+/**
+ * Send a chat message and get a recipe-library-grounded reply.
+ *
+ * @param {object[]} messages - Conversation history [{role, content}]
+ * @returns {Promise<{ reply: string, provider: string }>}
+ */
+export async function sendChatMessage(messages) {
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages }),
+    });
+  } catch (err) {
+    console.error('[API] fetch /chat error:', err);
+    throw new Error('Network error: Could not connect to the server to send your message.');
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Failed to chat: ${response.status}`);
+  }
+
+  return response.json();
+}
