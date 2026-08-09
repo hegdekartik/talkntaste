@@ -268,14 +268,41 @@ export async function updateRecipeOnServer(id, recipe) {
     body: JSON.stringify({ id, recipe }),
   });
 
-  if (!response.ok) {
+if (!response.ok) {
     const error = await response.json().catch(() => ({ error: 'Server error' }));
-    throw new Error(error.error || `Failed to update recipe: ${response.status}`);
+    throw new Error(error.error || `Failed to chat: ${response.status}`);
   }
 
   return response.json();
 }
 
+/**
+ * Synthesize speech for a reply using Sarvam TTS.
+ *
+ * @param {string} text - Reply text to speak
+ * @param {string} [language] - STT-detected language code (e.g. 'kn-IN')
+ * @returns {Promise<{ audioBase64: string, contentType: string, language: string }>}
+ */
+export async function speakText(text, language = '') {
+  let response;
+  try {
+    response = await fetch(`${API_BASE}/tts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, language }),
+    });
+  } catch (err) {
+    console.error('[API] fetch /tts error:', err);
+    throw new Error('Network error: Could not connect to the server to speak the reply.');
+  }
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Server error' }));
+    throw new Error(error.error || `Failed to synthesize speech: ${response.status}`);
+  }
+
+  return response.json();
+}
 
 /** Map mime types to file extensions */
 function getExtension(mimeType) {
@@ -367,15 +394,16 @@ export async function fetchRecipes() {
  * Send a chat message and get a recipe-library-grounded reply.
  *
  * @param {object[]} messages - Conversation history [{role, content}]
- * @returns {Promise<{ reply: string, provider: string }>}
+ * @param {string} [language] - STT-detected language code (e.g. 'kn-IN')
+ * @returns {Promise<{ reply: string, provider: string, language?: string }>}
  */
-export async function sendChatMessage(messages) {
+export async function sendChatMessage(messages, language = '') {
   let response;
   try {
     response = await fetch(`${API_BASE}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, ...(language ? { language } : {}) }),
     });
   } catch (err) {
     console.error('[API] fetch /chat error:', err);

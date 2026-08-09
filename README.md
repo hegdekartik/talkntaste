@@ -114,7 +114,8 @@ The project is fully configured to deploy to Vercel as a single app.
 | `POST` | `/api/structure` | Converts raw transcripts into structured JSON recipes (including context) via Sarvam LLM |
 | `POST` | `/api/save` | Saves the structured recipe to Supabase PostgreSQL |
 | `GET`  | `/api/recipes` | Fetches the user's recipe library from Supabase |
-| `POST` | `/api/chat` | Converses with the saved recipe library in natural language via Sarvam (OpenAI fallback) |
+| `POST` | `/api/chat` | HelpMeCook: speaks with your saved recipe library, step-by-step cooking guidance via Sarvam `sarvam-105b-conversations` (OpenAI fallback) |
+| `POST` | `/api/tts` | Synthesizes a chat reply into speech via Sarvam Bulbul v3 (language-matched speaker, mp3) |
 
 ## 📄 License
 MIT

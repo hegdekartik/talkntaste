@@ -247,7 +247,7 @@
     <!-- ===== CHAT VIEW ===== -->
     <section id="chat-view" class="view view--chat">
       <div class="chat-header">
-        <h2 class="chat-header__title">Ask your recipes</h2>
+        <h2 class="chat-header__title">HelpMeCook</h2>
         <button id="chat-clear-btn" class="chat-clear-btn" aria-label="Clear conversation">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
         </button>
@@ -262,20 +262,18 @@
         <p class="chat-suggestions__label">Try asking</p>
         <div class="chat-suggestions__row">
           <button class="chat-suggestion" data-prompt="What can I cook tonight from my recipes?">What can I cook tonight?</button>
-          <button class="chat-suggestion" data-prompt="Show me a vegetarian recipe">Show me a vegetarian recipe</button>
+          <button class="chat-suggestion" data-prompt="How do I make mom's recipe step by step?">Guide me step by step</button>
           <button class="chat-suggestion" data-prompt="Which recipe is quickest to make?">Which is quickest?</button>
-          <button class="chat-suggestion" data-prompt="What ingredients do I need for a dessert?">Ideas for dessert</button>
+          <button class="chat-suggestion" data-prompt="What do I need for a dessert?">Ideas for dessert</button>
         </div>
       </div>
 
-      <!-- Composer -->
-      <div class="chat-composer">
-        <button id="chat-mic-btn" class="chat-composer__mic" aria-label="Speak your question">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="12" rx="5"/><path d="M4 10v1a8 8 0 0 0 16 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
-        </button>
-        <input id="chat-input" type="text" class="chat-composer__input" placeholder="Ask your recipes anything…" autocomplete="off" enterkeyhint="send">
-        <button id="chat-send-btn" class="chat-composer__send" aria-label="Send message">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      <!-- Voice-only composer -->
+      <div class="chat-composer composer--voice">
+        <div class="chat-composer__status" id="chat-status">Tap to talk</div>
+        <button id="chat-mic-btn" class="chat-composer__mic chat-composer__mic--big" aria-label="Talk to the chef">
+          <svg class="mic-btn__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="13" rx="5"/><path d="M4 10v1a8 8 0 0 0 16 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>
+          <svg class="mic-btn__stop-icon" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
         </button>
       </div>
     </section>
@@ -429,9 +427,9 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
         <span>Library</span>
       </button>
-      <button id="nav-chat-btn" class="bottom-nav__item" aria-label="Chat with your recipes">
+      <button id="nav-chat-btn" class="bottom-nav__item" aria-label="HelpMeCook — talk to your recipes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5c-1.6 0-3.1-.4-4.5-1.2L3 20l1.2-5A8.5 8.5 0 1 1 21 11.5z"/><line x1="8.5" y1="11.5" x2="15.5" y2="11.5"/><line x1="8.5" y1="15" x2="13" y2="15"/></svg>
-        <span>Ask</span>
+        <span>HelpMeCook</span>
       </button>
     </nav>
 

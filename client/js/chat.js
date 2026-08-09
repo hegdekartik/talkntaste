@@ -1,33 +1,50 @@
 /**
- * chat.js — Chat with your saved recipe library
+ * chat.js — HelpMeCook: a voice-only, step-by-step cooking co-pilot.
  *
- * Text + voice input, assistant replies grounded in the user's recipe library
- * (via /api/chat). Conversation history is kept in memory and the last few
- * turns are sent with each request.
+ * You ask a question by voice (tap the mic, speak, and pause). The assistant
+ * replies in the same language, grounded in your saved recipe library, and
+ * SPEAKS the answer. Tap the mic again while it's talking to interrupt
+ * (barge-in) and ask the next thing — it automatically re-listens once the
+ * reply has finished.
  */
 
-import { sendChatMessage, transcribeAudio } from './api.js';
+import { transcribeAudio, speakText } from './api.js';
 import { AudioRecorder } from './recorder.js';
 
 const MAX_HISTORY_TURNS = 10;
 
+// Silence-based "end of turn" detection (client-side VAD).
+const SILENCE_END_MS = 1600;
+const SPEECH_LEVEL = 18; // average byte value from the frequency analyser
+const MIN_SPEECH_DURATION_MS = 450;
+
 // DOM
 const chatView = document.getElementById('chat-view');
 const chatThread = document.getElementById('chat-thread');
-const chatInput = document.getElementById('chat-input');
-const chatSendBtn = document.getElementById('chat-send-btn');
 const chatMicBtn = document.getElementById('chat-mic-btn');
 const chatClearBtn = document.getElementById('chat-clear-btn');
 const chatSuggestions = document.getElementById('chat-suggestions');
+const chatStatus = document.getElementById('chat-status');
 
-let history = []; // [{ role, content }]
-let isSending = false;
+let history = [];          // [{ role, content }]
+let lastLanguage = '';     // last STT-detected language (for TTS)
+let mode = 'idle';         // 'idle' | 'listening' | 'thinking' | 'speaking'
 let chatRecorder = null;
+let silenceMonitor = null;
+let chatAbort = null;      // AbortController for the in-flight chat request
+let audioContext = null;
+let currentSource = null;  // currently playing AudioBufferSourceNode
 
-/**
- * Append a message bubble to the thread.
- * @param {object} opts
- */
+// ============================================================
+// Thread rendering
+// ============================================================
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    chatView?.scrollTo({ top: chatView.scrollHeight, behavior: 'smooth' });
+  });
+}
+
 function appendBubble({ role, text, isTyping = false }) {
   const wrap = document.createElement('div');
   wrap.className = `chat-bubble chat-bubble--${role}`;
@@ -52,16 +69,12 @@ function appendBubble({ role, text, isTyping = false }) {
   return wrap;
 }
 
-function scrollToBottom() {
-  requestAnimationFrame(() => {
-    chatView?.scrollTo({ top: chatView.scrollHeight, behavior: 'smooth' });
-  });
-}
-
-/** Persist history to sessionStorage so it survives soft reloads. */
 function saveHistory() {
   try {
     sessionStorage.setItem('talkntaste_chat_history', JSON.stringify(history.slice(-MAX_HISTORY_TURNS)));
+  } catch { /* non-fatal */ }
+  try {
+    if (lastLanguage) sessionStorage.setItem('talkntaste_chat_language', lastLanguage);
   } catch { /* non-fatal */ }
 }
 
@@ -73,6 +86,9 @@ function restoreHistory() {
       if (Array.isArray(parsed)) history = parsed;
     }
   } catch { history = []; }
+  try {
+    lastLanguage = sessionStorage.getItem('talkntaste_chat_language') || '';
+  } catch { lastLanguage = ''; }
 }
 
 function showEmptyState() {
@@ -81,7 +97,7 @@ function showEmptyState() {
   wrap.className = 'chat-bubble chat-bubble--assistant chat-bubble--welcome';
   const body = document.createElement('div');
   body.className = 'chat-bubble__body';
-  body.textContent = 'Hi! Ask me anything about the recipes you\'ve saved — what to cook tonight, ingredient swaps, or a quick plan for a meal.';
+  body.textContent = 'Namaste! I am Head Chef. Tap the mic and ask me what to cook — I will help you step by step, in your own language.';
   wrap.appendChild(body);
   chatThread.appendChild(wrap);
   chatSuggestions?.classList.remove('hidden');
@@ -97,137 +113,339 @@ function renderHistory() {
   history.forEach((m) => appendBubble({ role: m.role, text: m.content }));
 }
 
-function setBusy(busy) {
-  isSending = busy;
-  if (chatSendBtn) chatSendBtn.disabled = busy;
-  if (chatInput) chatInput.disabled = busy;
-}
-
-function focusInput() {
-  chatInput?.focus({ preventScroll: true });
-}
-
-async function handleSend(rawText) {
-  const text = (rawText ?? chatInput.value).trim();
-  if (!text || isSending) return;
-
-  if (chatInput) chatInput.value = '';
-  chatSuggestions?.classList.add('hidden');
-
-  history.push({ role: 'user', content: text });
-  appendBubble({ role: 'user', text });
-  chatView?.scrollTo({ top: chatView.scrollHeight });
-
-  appendBubble({ role: 'assistant', isTyping: true });
-  setBusy(true);
-
-  try {
-    const { reply } = await sendChatMessage(history);
-    history.push({ role: 'assistant', content: reply });
-    chatThread.lastElementChild?.remove();
-    appendBubble({ role: 'assistant', text: reply });
-    saveHistory();
-  } catch (error) {
-    console.error('[Chat] send error:', error);
-    chatThread.lastElementChild?.remove();
-    appendBubble({
-      role: 'assistant',
-      text: `Sorry, I couldn't reach the kitchen right now. ${error.message || ''}`,
-    });
-  } finally {
-    setBusy(false);
-  }
-}
-
-// ============================================================
-// Voice input — reuse the app's recorder + Sarvam transcription
-// ============================================================
-async function startVoiceInput() {
-  if (chatRecorder) return;
-
-  try {
-    chatRecorder = new AudioRecorder();
-    chatRecorder.maxDuration = 60; // short queries
-    chatRecorder.warningDuration = 45;
-    chatRecorder.onWarning = () => showChatHint('Almost time — wrap up!');
-    chatRecorder.onMaxReached = () => stopVoiceInput();
-    await chatRecorder.start();
-    chatMicBtn.classList.add('recording');
-    chatMicBtn.setAttribute('aria-label', 'Stop listening');
-    showChatHint('Listening… ask away!');
-  } catch (error) {
-    console.error('[Chat] mic start error:', error);
-    chatRecorder = null;
-    chatMicBtn.classList.remove('recording');
-    showChatHint('Microphone unavailable');
-  }
-}
-
-async function stopVoiceInput() {
-  if (!chatRecorder) return;
-  const rec = chatRecorder;
-  chatRecorder = null;
-  chatMicBtn.classList.remove('recording');
-  chatMicBtn.setAttribute('aria-label', 'Speak your question');
-
-  const result = await rec.stop();
-  if (!result?.blob) return;
-
-  appendBubble({ role: 'assistant', isTyping: true });
-  setBusy(true);
-  try {
-    const data = await transcribeAudio(result.blob, '');
-    chatThread.lastElementChild?.remove();
-    if (data?.transcript) {
-      handleSend(data.transcript);
-    } else {
-      showChatHint('Couldn\'t hear that — please try again.');
-    }
-  } catch (error) {
-    console.error('[Chat] voice transcribe error:', error);
-    chatThread.lastElementChild?.remove();
-    showChatHint('Voice failed — try typing instead.');
-  } finally {
-    setBusy(false);
-  }
-}
-
-function showChatHint(message) {
+function showChatHint(message, duration = 2200) {
   const hint = document.createElement('div');
   hint.className = 'chat-bubble chat-bubble--assistant chat-bubble--hint';
   hint.textContent = message;
   chatThread.appendChild(hint);
-  setTimeout(() => hint.remove(), 2000);
+  setTimeout(() => hint.remove(), duration);
   scrollToBottom();
 }
 
-function resetChat() {
-  history = [];
-  try { sessionStorage.removeItem('talkntaste_chat_history'); } catch { /* noop */ }
-  showEmptyState();
-  focusInput();
+function setStatus(message) {
+  if (chatStatus) chatStatus.textContent = message;
+  if (chatMicBtn) chatMicBtn.setAttribute('aria-label', message || 'Talk to the chef');
+}
+
+function setMicVisual(state) {
+  if (!chatMicBtn) return;
+  chatMicBtn.classList.toggle('recording', state === 'listening');
+  chatMicBtn.classList.toggle('speaking', state === 'speaking');
+}
+
+// ============================================================
+// Audio playback (Web Audio API) — instant stop for barge-in
+// ============================================================
+
+function ensureAudioContext() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioContext.state === 'suspended') {
+    audioContext.resume().catch(() => {});
+  }
+  return audioContext;
+}
+
+function stopSpeaking() {
+  if (currentSource) {
+    try { currentSource.stop(); } catch { /* already stopped */ }
+    currentSource = null;
+  }
+}
+
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function speakReply(text, language = '') {
+  stopSpeaking();
+  const ctx = ensureAudioContext();
+
+  const { audioBase64 } = await speakText(text, language);
+  const arrayBuffer = base64ToArrayBuffer(audioBase64);
+  const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+
+  const source = ctx.createBufferSource();
+  source.buffer = audioBuffer;
+  source.connect(ctx.destination);
+  currentSource = source;
+
+  setStatus('Speaking…');
+  setMicVisual('speaking');
+
+  return new Promise((resolve) => {
+    const onEnd = () => {
+      if (source === currentSource) {
+        currentSource = null;
+      }
+      source.onended = null;
+      resolve();
+    };
+    source.onended = onEnd;
+    source.start();
+  });
+}
+
+// ============================================================
+// Recording with silence-based auto-stop
+// ============================================================
+
+function stopSilenceMonitor() {
+  if (silenceMonitor) {
+    clearInterval(silenceMonitor);
+    silenceMonitor = null;
+  }
+}
+
+function startSilenceMonitor(recorder) {
+  let voiced = false;
+  let speechStart = null;
+  let silentSince = null;
+
+  silenceMonitor = setInterval(() => {
+    const data = recorder.getFrequencyData();
+    if (!data) return;
+
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) sum += data[i];
+    const avg = sum / data.length;
+    const speaking = avg > SPEECH_LEVEL;
+
+    if (speaking) {
+      if (!voiced) speechStart = Date.now();
+      voiced = true;
+      silentSince = null;
+      return;
+    }
+
+    if (!voiced) return; // never spoke yet — keep waiting
+
+    if (silentSince === null) {
+      silentSince = Date.now();
+      return;
+    }
+
+    const spokeLongEnough = (speechStart !== null && Date.now() - speechStart >= MIN_SPEECH_DURATION_MS);
+    if (spokeLongEnough && Date.now() - silentSince >= SILENCE_END_MS) {
+      stopSilenceMonitor();
+      stopListening();
+    }
+  }, 120);
+}
+
+async function startListening() {
+  if (mode === 'listening') return;
+
+  // Barge-in / interrupt paths: stop whatever we're doing first.
+  if (mode === 'thinking') {
+    chatAbort?.abort();
+    chatAbort = null;
+    chatThread.lastElementChild?.remove();
+  }
+  if (mode === 'speaking') {
+    stopSpeaking();
+  }
+
+  try {
+    chatRecorder = new AudioRecorder();
+    chatRecorder.maxDuration = 60; // long rambling questions, then auto-send
+    chatRecorder.warningDuration = 50;
+    chatRecorder.onMaxReached = () => stopListening();
+    await chatRecorder.start();
+    mode = 'listening';
+
+    // Warm up the audio context inside this user gesture (autoplay policy).
+    ensureAudioContext();
+
+    setStatus('Listening…');
+    setMicVisual('listening');
+    chatClearBtn?.setAttribute('disabled', 'true');
+
+    startSilenceMonitor(chatRecorder);
+  } catch (error) {
+    console.error('[HelpMeCook] mic start error:', error);
+    chatRecorder = null;
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Microphone unavailable — tap to retry');
+  }
+}
+
+async function stopListening() {
+  if (!chatRecorder || mode !== 'listening') return;
+
+  const rec = chatRecorder;
+  chatRecorder = null;
+  stopSilenceMonitor();
+  chatClearBtn?.removeAttribute('disabled');
+
+  const result = await rec.stop();
+  const blob = result?.blob;
+  const duration = result?.duration || 0;
+
+  if (duration < 0.4 || !blob) {
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Tap to talk');
+    return;
+  }
+
+  setStatus('Understanding you…');
+  setMicVisual('idle');
+
+  try {
+    const data = await transcribeAudio(blob, '');
+    const transcript = data?.transcript?.trim();
+    lastLanguage = data?.language || lastLanguage || '';
+
+    if (!transcript) {
+      mode = 'idle';
+      setStatus('Tap to talk');
+      showChatHint('Could not hear that — please try again.');
+      return;
+    }
+
+    await handleTurn(transcript);
+  } catch (error) {
+    console.error('[HelpMeCook] transcribe error:', error);
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Tap to talk');
+    showChatHint('Sorry, I did not catch that. Please try once more.');
+  }
+}
+
+// ============================================================
+// Conversation turn
+// ============================================================
+
+async function handleTurn(userText) {
+  const text = userText.trim();
+  if (!text) {
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Tap to talk');
+    return;
+  }
+
+  chatSuggestions?.classList.add('hidden');
+
+  history.push({ role: 'user', content: text });
+  appendBubble({ role: 'user', text });
+  saveHistory();
+
+  appendBubble({ role: 'assistant', isTyping: true });
+  mode = 'thinking';
+  setStatus('Hmm, let me check your recipes…');
+  setMicVisual('idle');
+
+  chatAbort = new AbortController();
+  let reply = '';
+  try {
+    const data = await fetchChat(chatAbort.signal);
+    reply = data.reply || '';
+  } catch (error) {
+    if (error?.name === 'AbortError') return; // user barged in
+    console.error('[HelpMeCook] chat error:', error);
+    chatThread.lastElementChild?.remove();
+    showChatHint('Sorry, I could not reach your recipe library. Please try again.');
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Tap to talk');
+    return;
+  } finally {
+    chatAbort = null;
+  }
+
+  if (!reply.trim()) {
+    chatThread.lastElementChild?.remove();
+    showChatHint('I got nothing from the pantry — please ask again.');
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Tap to talk');
+    return;
+  }
+
+  history.push({ role: 'assistant', content: reply });
+  chatThread.lastElementChild?.remove();
+  appendBubble({ role: 'assistant', text: reply });
+  saveHistory();
+
+  // Speak the reply; then auto-relisten for the next step.
+  mode = 'speaking';
+  setStatus('Speaking…');
+  setMicVisual('speaking');
+  try {
+    await speakReply(reply, lastLanguage);
+  } catch (error) {
+    console.error('[HelpMeCook] TTS error:', error);
+    showChatHint('(Speech unavailable — please tap the mic to continue.)', 3000);
+  }
+
+  // If the user didn't barge in during/after playback, start listening again.
+  if (mode === 'speaking' && !chatRecorder) {
+    mode = 'idle';
+    setMicVisual('idle');
+    setStatus('Tap to talk');
+    startListening();
+  }
+}
+
+async function fetchChat(signal) {
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: history,
+      ...(lastLanguage ? { language: lastLanguage } : {}),
+    }),
+    signal,
+  });
+  return response.json();
 }
 
 // ============================================================
 // Init / public API
 // ============================================================
+
+function resetChat() {
+  stopSpeaking();
+  stopSilenceMonitor();
+  chatAbort?.abort();
+  chatAbort = null;
+  if (chatRecorder && mode === 'listening') {
+    chatRecorder.stop().catch?.(() => {});
+  }
+  chatRecorder = null;
+  mode = 'idle';
+  history = [];
+  lastLanguage = '';
+  try { sessionStorage.removeItem('talkntaste_chat_history'); } catch { /* noop */ }
+  try { sessionStorage.removeItem('talkntaste_chat_language'); } catch { /* noop */ }
+  showEmptyState();
+  setMicVisual('idle');
+  setStatus('Tap to talk');
+  if (chatMicBtn) {
+    chatMicBtn.classList.remove('recording', 'speaking');
+    chatMicBtn.setAttribute('aria-label', 'Talk to the chef');
+  }
+}
+
 export function initChat() {
   restoreHistory();
   renderHistory();
 
-  if (chatSendBtn) chatSendBtn.addEventListener('click', () => handleSend());
-  if (chatInput) {
-    chatInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-        e.preventDefault();
-        handleSend();
-      }
-    });
-  }
   if (chatMicBtn) {
     chatMicBtn.addEventListener('click', () => {
-      if (chatRecorder) stopVoiceInput();
-      else startVoiceInput();
+      if (mode === 'listening') {
+        stopListening();
+      } else {
+        startListening();
+      }
     });
   }
   if (chatClearBtn) chatClearBtn.addEventListener('click', resetChat);
@@ -235,17 +453,17 @@ export function initChat() {
   if (chatSuggestions) {
     chatSuggestions.addEventListener('click', (e) => {
       const chip = e.target.closest('.chat-suggestion');
-      if (chip?.dataset.prompt) handleSend(chip.dataset.prompt);
+      if (chip?.dataset.prompt) handleTurn(chip.dataset.prompt);
     });
   }
 }
 
-/** Called whenever the Ask nav tab becomes active. */
+/** Called whenever the HelpMeCook nav tab becomes active. */
 export function activateChat() {
   if (!history.length && !chatThread.children.length) {
     showEmptyState();
   } else {
     renderHistory();
   }
-  focusInput();
+  setStatus(mode === 'listening' ? 'Listening…' : mode === 'speaking' ? 'Speaking…' : 'Tap to talk');
 }

@@ -40,12 +40,17 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Last message must be from the user.' });
   }
 
+  // Optional language detected by STT (e.g. 'kn-IN') — echoed back so the
+  // client can pick the right TTS speaker/language for the spoken reply.
+  const language = typeof req.body?.language === 'string' ? req.body.language : '';
+
   try {
     const recipes = await getRecipes();
     const { reply, provider } = await chatWithLibrary({ messages: history, recipes });
-
-    console.log(`[API] /chat replied via ${provider} (${recipes.length} recipes in context)`);
-    res.status(200).json({ reply, provider });
+    const logs = [`/chat replied via ${provider} (${recipes.length} recipes in context)`];
+    if (language) logs.push(`language=${language}`);
+    console.log(`[API] ${logs.join(' | ')}`);
+    res.status(200).json({ reply, provider, language });
   } catch (error) {
     console.error('[API] /chat error:', error.message);
     res.status(500).json({ error: error.message });
